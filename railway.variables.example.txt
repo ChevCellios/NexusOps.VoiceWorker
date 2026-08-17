@@ -1,0 +1,10 @@
+# Required runtime configuration. Enter these in Railway Variables; do not commit real values.
+Persistence__Provider=PostgreSql
+ConnectionStrings__NexusOps=Host=YOUR_SUPABASE_POOLER_HOST;Port=5432;Database=postgres;Username=YOUR_SUPABASE_USER;Password=YOUR_DATABASE_PASSWORD;SSL Mode=Require
+OpenAI__ApiKey=YOUR_OPENAI_API_KEY
+OpenAI__RealtimeModel=gpt-realtime-1.5
+Twilio__AccountSid=YOUR_TWILIO_ACCOUNT_SID
+Twilio__AuthToken=YOUR_TWILIO_AUTH_TOKEN
+Twilio__FromPhoneNumber=+10000000000
+Twilio__PublicBaseUrl=https://YOUR_RAILWAY_DOMAIN
+Twilio__MediaStreamUrl=wss://YOUR_RAILWAY_DOMAIN/voice/media

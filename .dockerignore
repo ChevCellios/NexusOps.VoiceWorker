@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+.git/
+.gitignore
+appsettings.Local.json
+nexusops.connection.local.txt
+openai.key.local.txt
+twilio.local.txt
+*.user
+*.suo
+.vs/

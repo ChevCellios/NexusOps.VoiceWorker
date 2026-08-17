@@ -1,0 +1,7 @@
+appsettings.Local.json
+nexusops.connection.local.txt
+openai.key.local.txt
+twilio.local.txt
+bin/
+obj/
+.vs/

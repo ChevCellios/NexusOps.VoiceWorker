@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37531.7 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusOps.VoiceWorker", "NexusOps.VoiceWorker.csproj", "{AD148D83-CE06-42EB-FF43-B931602593C4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AD148D83-CE06-42EB-FF43-B931602593C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD148D83-CE06-42EB-FF43-B931602593C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD148D83-CE06-42EB-FF43-B931602593C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD148D83-CE06-42EB-FF43-B931602593C4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9DCC3215-B7CF-4727-9C77-BA6160AF5827}
+	EndGlobalSection
+EndGlobal
