@@ -33,20 +33,11 @@ public sealed class TwilioVoiceProvider(
 
         var sessionId = session.Id.ToString("D");
         var answerUrl = $"{_options.PublicBaseUrl.TrimEnd('/')}/voice/provider/answer?voiceCallSessionId={sessionId}";
-        var statusUrl = $"{_options.PublicBaseUrl.TrimEnd('/')}/voice/provider/status?voiceCallSessionId={sessionId}";
         var values = new List<KeyValuePair<string, string>>
         {
             new("To", session.ToNumber),
             new("From", string.IsNullOrWhiteSpace(session.FromNumber) ? _options.FromPhoneNumber : session.FromNumber),
-            new("Url", answerUrl),
-            new("Method", "POST"),
-            new("StatusCallback", statusUrl),
-            new("StatusCallbackMethod", "POST"),
-            new("StatusCallbackEvent", "initiated"),
-            new("StatusCallbackEvent", "ringing"),
-            new("StatusCallbackEvent", "answered"),
-            new("StatusCallbackEvent", "completed"),
-            new("Record", session.RecordingEnabled ? "true" : "false")
+            new("Url", answerUrl)
         };
 
         using var request = new HttpRequestMessage(
