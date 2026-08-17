@@ -35,16 +35,17 @@ builder.Services.AddOptions<TwilioOptions>().BindConfiguration(TwilioOptions.Sec
 builder.Services.AddOptions<OpenAIRealtimeOptions>().BindConfiguration(OpenAIRealtimeOptions.SectionName);
 builder.Services.AddHttpClient<TwilioVoiceProvider>();
 var persistenceProvider = builder.Configuration["Persistence:Provider"];
-if (string.Equals(persistenceProvider, "InMemory", StringComparison.OrdinalIgnoreCase))
+var connectionString = builder.Configuration.GetConnectionString("NexusOps");
+var useInMemoryPersistence = string.Equals(persistenceProvider, "InMemory", StringComparison.OrdinalIgnoreCase)
+    || string.IsNullOrWhiteSpace(connectionString);
+if (useInMemoryPersistence)
 {
     builder.Services.AddSingleton<IVoiceCallRepository, InMemoryVoiceCallRepository>();
     builder.Services.AddSingleton<IVoiceTranscriptRepository, InMemoryVoiceTranscriptRepository>();
 }
 else
 {
-    var connectionString = builder.Configuration.GetConnectionString("NexusOps")
-        ?? throw new InvalidOperationException("ConnectionStrings:NexusOps is required for PostgreSQL persistence.");
-    builder.Services.AddSingleton(NpgsqlDataSource.Create(connectionString));
+    builder.Services.AddSingleton(NpgsqlDataSource.Create(connectionString!));
     builder.Services.AddSingleton<IVoiceCallRepository, PostgresVoiceCallRepository>();
     builder.Services.AddSingleton<IVoiceTranscriptRepository, PostgresVoiceTranscriptRepository>();
 }
