@@ -37,8 +37,8 @@ public sealed record VoiceCallSession(
     DateTimeOffset UpdatedAt);
 
 public sealed record StartVoiceCallRequest(
-    [property: Required] Guid VoiceCallSessionId,
-    [property: Required] Guid AgentTaskId);
+    [Required] Guid VoiceCallSessionId,
+    [Required] Guid AgentTaskId);
 
 public sealed record StartVoiceCallResponse(
     Guid VoiceCallSessionId,
@@ -47,8 +47,8 @@ public sealed record StartVoiceCallResponse(
     string? ProviderCallId);
 
 public sealed record ProviderStatusRequest(
-    [property: Required] string ProviderCallId,
-    [property: Required] string Status,
+    [Required] string ProviderCallId,
+    [Required] string Status,
     Guid? VoiceCallSessionId);
 
 public sealed class TwilioStatusWebhookRequest
@@ -63,5 +63,5 @@ public sealed class TwilioStatusWebhookRequest
 public sealed record ProviderAnswerRequest(Guid VoiceCallSessionId);
 public sealed record ProviderAnswerResponse(Guid VoiceCallSessionId, string MediaStreamUrl);
 public sealed record CompleteVoiceCallRequest(string? Summary);
-public sealed record FailVoiceCallRequest([property: Required] string Reason);
-public sealed record VoiceCallOutcomeRequest([property: Required] string Outcome, string? Notes);
+public sealed record FailVoiceCallRequest([Required] string Reason);
+public sealed record VoiceCallOutcomeRequest([Required] string Outcome, string? Notes);
