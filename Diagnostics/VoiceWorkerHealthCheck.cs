@@ -15,7 +15,12 @@ public sealed class VoiceWorkerHealthCheck(
         HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
-        var persistence = configuration["Persistence:Provider"] ?? "PostgreSql";
+        var configuredPersistence = configuration["Persistence:Provider"] ?? "PostgreSql";
+        var configuredConnectionString = configuration.GetConnectionString("NexusOps");
+        var persistence = string.Equals(configuredPersistence, "InMemory", StringComparison.OrdinalIgnoreCase)
+            || string.IsNullOrWhiteSpace(configuredConnectionString)
+                ? "InMemory"
+                : "PostgreSql";
         var twilioReady = IsSecretConfigured(twilio.Value.AccountSid) && IsSecretConfigured(twilio.Value.AuthToken);
         var openAiReady = IsSecretConfigured(openAi.Value.ApiKey);
         var databaseConnected = string.Equals(persistence, "InMemory", StringComparison.OrdinalIgnoreCase);
@@ -24,9 +29,7 @@ public sealed class VoiceWorkerHealthCheck(
         {
             try
             {
-                var connectionString = configuration.GetConnectionString("NexusOps")
-                    ?? throw new InvalidOperationException("ConnectionStrings:NexusOps is missing.");
-                await using var dataSource = NpgsqlDataSource.Create(connectionString);
+                await using var dataSource = NpgsqlDataSource.Create(configuredConnectionString!);
                 await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
                 await using var command = new NpgsqlCommand("select 1", connection);
                 await command.ExecuteScalarAsync(cancellationToken);
