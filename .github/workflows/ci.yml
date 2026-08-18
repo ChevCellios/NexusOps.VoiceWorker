@@ -1,0 +1,41 @@
+name: VoiceWorker CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: voiceworker-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore NexusOps.VoiceWorker.sln --configfile NuGet.Config
+
+      - name: Build release
+        run: dotnet build NexusOps.VoiceWorker.sln --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test NexusOps.VoiceWorker.sln --configuration Release --no-build --verbosity normal
+
+      - name: Verify Railway Docker image
+        run: docker build --tag nexusops-voiceworker:ci .

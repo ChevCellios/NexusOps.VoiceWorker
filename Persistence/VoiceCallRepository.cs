@@ -7,6 +7,7 @@ namespace NexusOps.VoiceWorker.Persistence;
 public interface IVoiceCallRepository
 {
     Task<VoiceCallSession?> GetAsync(Guid id, CancellationToken cancellationToken);
+    Task<IReadOnlyList<VoiceCallSession>> ListAsync(int limit, CancellationToken cancellationToken);
     Task UpsertAsync(VoiceCallSession session, CancellationToken cancellationToken);
 }
 
@@ -19,6 +20,10 @@ public sealed class InMemoryVoiceCallRepository : IVoiceCallRepository
         _sessions.TryGetValue(id, out var session);
         return Task.FromResult(session);
     }
+
+    public Task<IReadOnlyList<VoiceCallSession>> ListAsync(int limit, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<VoiceCallSession>>(
+            _sessions.Values.OrderByDescending(item => item.CreatedAt).Take(limit).ToArray());
 
     public Task UpsertAsync(VoiceCallSession session, CancellationToken cancellationToken)
     {
@@ -47,7 +52,21 @@ public sealed class PostgresVoiceCallRepository(NpgsqlDataSource dataSource) : I
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         if (!await reader.ReadAsync(cancellationToken)) return null;
 
-        return new VoiceCallSession(
+        return ReadSession(reader);
+    }
+
+    public async Task<IReadOnlyList<VoiceCallSession>> ListAsync(int limit, CancellationToken cancellationToken)
+    {
+        var sql = SelectSql.Replace("where id = $1", "order by created_at desc limit $1", StringComparison.Ordinal);
+        await using var command = dataSource.CreateCommand(sql);
+        command.Parameters.AddWithValue(Math.Clamp(limit, 1, 200));
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        var sessions = new List<VoiceCallSession>();
+        while (await reader.ReadAsync(cancellationToken)) sessions.Add(ReadSession(reader));
+        return sessions;
+    }
+
+    private static VoiceCallSession ReadSession(NpgsqlDataReader reader) => new(
             reader.GetGuid(0), reader.GetGuid(1), GetNullableGuid(reader, 2),
             reader.GetGuid(3), reader.GetGuid(4), reader.GetString(5),
             ParseStatus(reader.GetString(6)), reader.GetString(7), GetNullableString(reader, 8),
@@ -58,7 +77,6 @@ public sealed class PostgresVoiceCallRepository(NpgsqlDataSource dataSource) : I
             GetNullableDateTimeOffset(reader, 20), reader.IsDBNull(21) ? null : reader.GetInt32(21),
             GetNullableString(reader, 22), GetNullableString(reader, 23),
             reader.GetFieldValue<DateTimeOffset>(24), reader.GetFieldValue<DateTimeOffset>(25));
-    }
 
     public async Task UpsertAsync(VoiceCallSession session, CancellationToken cancellationToken)
     {
