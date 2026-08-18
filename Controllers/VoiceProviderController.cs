@@ -12,7 +12,8 @@ namespace NexusOps.VoiceWorker.Controllers;
 public sealed class VoiceProviderController(
     IVoiceCallService service,
     IVoiceProvider provider,
-    ITwilioRequestValidator requestValidator) : ControllerBase
+    ITwilioRequestValidator requestValidator,
+    ILogger<VoiceProviderController> logger) : ControllerBase
 {
     [HttpPost("status")]
     [Consumes("application/x-www-form-urlencoded")]
@@ -32,9 +33,14 @@ public sealed class VoiceProviderController(
     [Consumes("application/x-www-form-urlencoded")]
     public async Task<IActionResult> Answer([FromQuery] Guid voiceCallSessionId, CancellationToken cancellationToken)
     {
-        if (!await requestValidator.IsValidAsync(Request, cancellationToken)) return Unauthorized();
+        if (!await requestValidator.IsValidAsync(Request, cancellationToken))
+        {
+            logger.LogWarning("Twilio answer webhook was rejected for voice session {SessionId}.", voiceCallSessionId);
+            return Unauthorized();
+        }
 
         var streamUrl = SecurityElement.Escape(provider.GetMediaStreamUrl(voiceCallSessionId));
+        logger.LogInformation("Twilio answer webhook accepted for voice session {SessionId}; returning Media Stream TwiML.", voiceCallSessionId);
         var twiml = $"<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Connect><Stream url=\"{streamUrl}\" /></Connect></Response>";
         return Content(twiml, "text/xml", System.Text.Encoding.UTF8);
     }
