@@ -1,6 +1,12 @@
 # NexusOps.VoiceWorker
 
-Compilable ASP.NET Core starter for the NexusOps voice-call boundary. It exposes the planned REST and WebSocket routes, reads and updates existing `voice_call_sessions` rows in PostgreSQL, but deliberately makes no Twilio or OpenAI network calls.
+## CI/CD
+
+GitHub Actions workflow `.github/workflows/ci.yml` restores, builds, tests, and verifies the Docker image on pushes and pull requests targeting `main`.
+
+Production deployment uses Railway's existing GitHub autodeploy integration. Enable **Wait for CI** in the Railway service settings so Railway deploys a commit only after the GitHub workflow succeeds. No Railway token is required in GitHub for this setup.
+
+Compilable ASP.NET Core starter for the NexusOps voice-call boundary. It exposes the planned REST and WebSocket routes, reads and updates existing `voice_call_sessions` rows in PostgreSQL, and can initiate a Twilio call when the provider is configured. The OpenAI Realtime integration remains a controlled starter implementation.
 
 ## Run
 

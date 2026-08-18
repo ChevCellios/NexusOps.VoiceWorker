@@ -1,4 +1,5 @@
 using NexusOps.VoiceWorker.Persistence;
+using NexusOps.VoiceWorker.Controllers;
 using NexusOps.VoiceWorker.Providers;
 using NexusOps.VoiceWorker.Providers.Twilio;
 using NexusOps.VoiceWorker.Realtime;
@@ -36,6 +37,7 @@ builder.Services.AddOptions<OpenAIRealtimeOptions>().BindConfiguration(OpenAIRea
 builder.Services.AddHttpClient<TwilioVoiceProvider>();
 builder.Services.AddHttpClient<BrowserRealtimeSessionService>();
 builder.Services.AddOptions<BrowserRealtimeTestOptions>().BindConfiguration(BrowserRealtimeTestOptions.SectionName);
+builder.Services.AddOptions<AdminOptions>().BindConfiguration(AdminOptions.SectionName);
 var persistenceProvider = builder.Configuration["Persistence:Provider"];
 var connectionString = builder.Configuration.GetConnectionString("NexusOps");
 var useInMemoryPersistence = string.Equals(persistenceProvider, "InMemory", StringComparison.OrdinalIgnoreCase)
