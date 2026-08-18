@@ -31,6 +31,8 @@ public sealed class OpenAIRealtimeClient(
         using var openAiSocket = new ClientWebSocket();
         openAiSocket.Options.SetRequestHeader("Authorization", $"Bearer {_options.ApiKey}");
         var endpoint = $"{_options.RealtimeEndpoint.TrimEnd('/')}?model={Uri.EscapeDataString(_options.RealtimeModel)}";
+        logger.LogInformation("Connecting OpenAI Realtime bridge for {SessionId} using {Model}.",
+            voiceCallSessionId, _options.RealtimeModel);
         await openAiSocket.ConnectAsync(new Uri(endpoint), cancellationToken);
 
         logger.LogInformation("OpenAI Realtime bridge connected for {SessionId} using {Model}.",

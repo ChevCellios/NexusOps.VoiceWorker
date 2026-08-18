@@ -8,7 +8,8 @@ namespace NexusOps.VoiceWorker.WebSockets;
 public sealed class VoiceMediaWebSocketHandler(
     IRealtimeClient realtimeClient,
     ITwilioRequestValidator requestValidator,
-    IOptions<TwilioOptions> options)
+    IOptions<TwilioOptions> options,
+    ILogger<VoiceMediaWebSocketHandler> logger)
 {
     public async Task HandleAsync(HttpContext context)
     {
@@ -29,7 +30,20 @@ public sealed class VoiceMediaWebSocketHandler(
         Guid? sessionId = Guid.TryParse(context.Request.Query["voiceCallSessionId"], out var parsed)
             ? parsed
             : null;
+        logger.LogInformation("Twilio Media Stream WebSocket request accepted for voice session {SessionId}.", sessionId);
         using var socket = await context.WebSockets.AcceptWebSocketAsync();
-        await realtimeClient.BridgeAsync(socket, sessionId, context.RequestAborted);
+        try
+        {
+            await realtimeClient.BridgeAsync(socket, sessionId, context.RequestAborted);
+            logger.LogInformation("Voice media bridge ended normally for voice session {SessionId}.", sessionId);
+        }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            logger.LogInformation("Voice media bridge disconnected for voice session {SessionId}.", sessionId);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Voice media bridge failed for voice session {SessionId}.", sessionId);
+        }
     }
 }
