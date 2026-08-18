@@ -10,7 +10,9 @@ public interface ITwilioRequestValidator
     Task<bool> IsValidAsync(HttpRequest request, CancellationToken cancellationToken, string? externallyVisibleUrl = null);
 }
 
-public sealed class TwilioRequestValidator(IOptions<TwilioOptions> options) : ITwilioRequestValidator
+public sealed class TwilioRequestValidator(
+    IOptions<TwilioOptions> options,
+    ILogger<TwilioRequestValidator> logger) : ITwilioRequestValidator
 {
     private readonly TwilioOptions _options = options.Value;
 
@@ -19,10 +21,24 @@ public sealed class TwilioRequestValidator(IOptions<TwilioOptions> options) : IT
         CancellationToken cancellationToken,
         string? externallyVisibleUrl = null)
     {
-        if (!request.Headers.TryGetValue("X-Twilio-Signature", out var signature) ||
-            string.IsNullOrWhiteSpace(_options.AuthToken) ||
-            _options.AuthToken.StartsWith("YOUR_", StringComparison.Ordinal))
+        if (!_options.ValidateSignatures)
+        {
+            logger.LogWarning("Twilio signature validation is disabled for {Path}; use this only for a controlled test.", request.Path);
+            return true;
+        }
+
+        if (!request.Headers.TryGetValue("X-Twilio-Signature", out var signature))
+        {
+            logger.LogWarning("Twilio request rejected: X-Twilio-Signature is missing for {Path}.", request.Path);
             return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(_options.AuthToken) ||
+            _options.AuthToken.StartsWith("YOUR_", StringComparison.Ordinal))
+        {
+            logger.LogWarning("Twilio request rejected: AuthToken is not configured.");
+            return false;
+        }
 
         var publicUrl = externallyVisibleUrl ??
             $"{_options.PublicBaseUrl.TrimEnd('/')}{request.Path}{request.QueryString}";
@@ -39,7 +55,10 @@ public sealed class TwilioRequestValidator(IOptions<TwilioOptions> options) : IT
         var expected = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(signedValue.ToString())));
         var expectedBytes = Encoding.ASCII.GetBytes(expected);
         var suppliedBytes = Encoding.ASCII.GetBytes(signature.ToString());
-        return expectedBytes.Length == suppliedBytes.Length &&
-               CryptographicOperations.FixedTimeEquals(expectedBytes, suppliedBytes);
+        var valid = expectedBytes.Length == suppliedBytes.Length &&
+                    CryptographicOperations.FixedTimeEquals(expectedBytes, suppliedBytes);
+        if (!valid)
+            logger.LogWarning("Twilio signature validation failed for public URL {PublicUrl}.", publicUrl);
+        return valid;
     }
 }

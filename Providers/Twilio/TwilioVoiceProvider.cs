@@ -14,6 +14,7 @@ public sealed class TwilioOptions
     public string FromPhoneNumber { get; init; } = string.Empty;
     public string PublicBaseUrl { get; init; } = string.Empty;
     public string MediaStreamUrl { get; init; } = string.Empty;
+    public bool ValidateSignatures { get; init; } = true;
 }
 
 public sealed class TwilioVoiceProvider(
