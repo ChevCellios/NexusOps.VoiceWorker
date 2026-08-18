@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="hr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NexusOps Realtime test</title>
+  <style>
+    body{font-family:system-ui,sans-serif;background:#f3f6fb;color:#172033;margin:0;padding:30px}
+    main{max-width:680px;margin:auto;background:white;padding:28px;border-radius:16px;box-shadow:0 8px 30px #17203318}
+    input,button{font:inherit;padding:11px 14px;border-radius:8px;border:1px solid #cbd3df}
+    input{width:100%;box-sizing:border-box;margin:8px 0 14px}button{cursor:pointer;margin-right:8px}
+    #start{background:#1769e0;color:white;border-color:#1769e0}#stop{background:white}
+    #status{margin-top:20px;padding:12px;background:#eef2f8;border-radius:8px}pre{white-space:pre-wrap;font-size:12px;max-height:250px;overflow:auto}
+  </style>
+</head>
+<body><main>
+  <h1>NexusOps Voice test</h1>
+  <p>Testiraj OpenAI Realtime razgovor putem mikrofona, bez Twilio poziva.</p>
+  <label for="key">Testna lozinka</label>
+  <input id="key" type="password" autocomplete="off" placeholder="BrowserRealtimeTest access key">
+  <button id="start">Pokreni razgovor</button><button id="stop" disabled>Zaustavi</button>
+  <div id="status">Spremno.</div><pre id="events"></pre>
+</main>
+<script>
+let pc, stream, dc;
+const statusEl=document.querySelector('#status'), events=document.querySelector('#events');
+function status(text){statusEl.textContent=text}
+function log(text){events.textContent=(text+'\n'+events.textContent).slice(0,8000)}
+async function stop(){
+  if(dc)dc.close(); if(pc)pc.close(); if(stream)stream.getTracks().forEach(t=>t.stop());
+  dc=pc=stream=null; document.querySelector('#start').disabled=false; document.querySelector('#stop').disabled=true; status('Zaustavljeno.');
+}
+document.querySelector('#stop').onclick=stop;
+document.querySelector('#start').onclick=async()=>{
+  const key=document.querySelector('#key').value;
+  if(!key){status('Upiši testnu lozinku.');return}
+  document.querySelector('#start').disabled=true; status('Tražim dopuštenje za mikrofon...');
+  try{
+    pc=new RTCPeerConnection();
+    const audio=document.createElement('audio'); audio.autoplay=true; pc.ontrack=e=>audio.srcObject=e.streams[0];
+    stream=await navigator.mediaDevices.getUserMedia({audio:true}); pc.addTrack(stream.getAudioTracks()[0]);
+    dc=pc.createDataChannel('oai-events');
+    dc.onopen=()=>{status('Povezano. Govori na engleskom.');log('Data channel connected')};
+    dc.onmessage=e=>{try{const x=JSON.parse(e.data);if(x.type==='error'||x.type?.includes('transcript'))log(e.data)}catch{log(e.data)}};
+    dc.onclose=()=>status('Veza je zatvorena.');
+    const offer=await pc.createOffer(); await pc.setLocalDescription(offer);
+    const response=await fetch('/realtime/browser/session',{method:'POST',headers:{'Content-Type':'application/sdp','X-NexusOps-Test-Key':key},body:offer.sdp});
+    const answerSdp=await response.text(); if(!response.ok)throw new Error('Server '+response.status+': '+answerSdp);
+    await pc.setRemoteDescription({type:'answer',sdp:answerSdp});
+    document.querySelector('#stop').disabled=false; status('Povezivanje s OpenAI Realtime...');
+  }catch(error){log(error.message);status('Greška: '+error.message);await stop()}
+};
+</script></body></html>

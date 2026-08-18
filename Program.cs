@@ -34,6 +34,8 @@ builder.Services.AddHealthChecks()
 builder.Services.AddOptions<TwilioOptions>().BindConfiguration(TwilioOptions.SectionName);
 builder.Services.AddOptions<OpenAIRealtimeOptions>().BindConfiguration(OpenAIRealtimeOptions.SectionName);
 builder.Services.AddHttpClient<TwilioVoiceProvider>();
+builder.Services.AddHttpClient<BrowserRealtimeSessionService>();
+builder.Services.AddOptions<BrowserRealtimeTestOptions>().BindConfiguration(BrowserRealtimeTestOptions.SectionName);
 var persistenceProvider = builder.Configuration["Persistence:Provider"];
 var connectionString = builder.Configuration.GetConnectionString("NexusOps");
 var useInMemoryPersistence = string.Equals(persistenceProvider, "InMemory", StringComparison.OrdinalIgnoreCase)
@@ -61,6 +63,7 @@ var app = builder.Build();
 
 app.UseExceptionHandler();
 app.UseWebSockets();
+app.UseStaticFiles();
 app.MapControllers();
 app.MapGet("/", VoiceWorkerStatusPage.WriteAsync);
 app.MapGet("/health", VoiceWorkerStatusPage.WriteHealthAsync);
