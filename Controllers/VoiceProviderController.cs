@@ -41,7 +41,7 @@ public sealed class VoiceProviderController(
 
         var streamUrl = SecurityElement.Escape(provider.GetMediaStreamUrl(voiceCallSessionId));
         logger.LogInformation("Twilio answer webhook accepted for voice session {SessionId}; returning Media Stream TwiML.", voiceCallSessionId);
-        var twiml = $"<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Connect><Stream url=\"{streamUrl}\" /></Connect></Response>";
+        var twiml = $"<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Connect><Stream url=\"{streamUrl}\"><Parameter name=\"voiceCallSessionId\" value=\"{voiceCallSessionId:D}\" /></Stream></Connect></Response>";
         return Content(twiml, "text/xml", System.Text.Encoding.UTF8);
     }
 }

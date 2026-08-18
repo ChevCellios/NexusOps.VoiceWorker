@@ -67,7 +67,7 @@ public sealed class TwilioVoiceProvider(
     }
 
     public string GetMediaStreamUrl(Guid voiceCallSessionId) =>
-        $"{_options.MediaStreamUrl}?voiceCallSessionId={voiceCallSessionId:D}";
+        _options.MediaStreamUrl;
 
     private void EnsureConfigured()
     {

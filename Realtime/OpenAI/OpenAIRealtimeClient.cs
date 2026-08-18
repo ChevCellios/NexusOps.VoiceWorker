@@ -27,6 +27,7 @@ public sealed class OpenAIRealtimeClient(
 
     public async Task BridgeAsync(WebSocket providerSocket, Guid? voiceCallSessionId, CancellationToken cancellationToken)
     {
+        Guid? resolvedSessionId = voiceCallSessionId;
         EnsureConfigured();
         using var openAiSocket = new ClientWebSocket();
         openAiSocket.Options.SetRequestHeader("Authorization", $"Bearer {_options.ApiKey}");
@@ -59,9 +60,14 @@ public sealed class OpenAIRealtimeClient(
 
         var streamSid = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
         using var bridgeCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var fromTwilio = RelayTwilioToOpenAiAsync(providerSocket, openAiSocket, streamSid, bridgeCancellation.Token);
+        var fromTwilio = RelayTwilioToOpenAiAsync(
+            providerSocket,
+            openAiSocket,
+            streamSid,
+            sessionId => resolvedSessionId = sessionId,
+            bridgeCancellation.Token);
         var fromOpenAi = RelayOpenAiToTwilioAsync(
-            openAiSocket, providerSocket, streamSid, voiceCallSessionId, bridgeCancellation.Token);
+            openAiSocket, providerSocket, streamSid, () => resolvedSessionId, bridgeCancellation.Token);
 
         await Task.WhenAny(fromTwilio, fromOpenAi);
         await bridgeCancellation.CancelAsync();
@@ -76,6 +82,7 @@ public sealed class OpenAIRealtimeClient(
         WebSocket twilio,
         WebSocket openAi,
         TaskCompletionSource<string> streamSid,
+        Action<Guid> setVoiceCallSessionId,
         CancellationToken cancellationToken)
     {
         while (twilio.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
@@ -88,8 +95,13 @@ public sealed class OpenAIRealtimeClient(
 
             if (eventType == "start")
             {
-                var sid = root.GetProperty("start").GetProperty("streamSid").GetString();
+                var start = root.GetProperty("start");
+                var sid = start.GetProperty("streamSid").GetString();
                 if (!string.IsNullOrWhiteSpace(sid)) streamSid.TrySetResult(sid);
+                if (start.TryGetProperty("customParameters", out var parameters) &&
+                    parameters.TryGetProperty("voiceCallSessionId", out var sessionIdValue) &&
+                    Guid.TryParse(sessionIdValue.GetString(), out var sessionId))
+                    setVoiceCallSessionId(sessionId);
             }
             else if (eventType == "media")
             {
@@ -108,7 +120,7 @@ public sealed class OpenAIRealtimeClient(
         WebSocket openAi,
         WebSocket twilio,
         TaskCompletionSource<string> streamSid,
-        Guid? voiceCallSessionId,
+        Func<Guid?> getVoiceCallSessionId,
         CancellationToken cancellationToken)
     {
         while (openAi.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
@@ -136,11 +148,11 @@ public sealed class OpenAIRealtimeClient(
             }
             else if (type == "conversation.item.input_audio_transcription.completed")
             {
-                await PersistTranscriptAsync(voiceCallSessionId, "user", root, cancellationToken);
+                await PersistTranscriptAsync(getVoiceCallSessionId(), "user", root, cancellationToken);
             }
             else if (type == "response.output_audio_transcript.done")
             {
-                await PersistTranscriptAsync(voiceCallSessionId, "agent", root, cancellationToken);
+                await PersistTranscriptAsync(getVoiceCallSessionId(), "agent", root, cancellationToken);
             }
             else if (type == "error")
             {
