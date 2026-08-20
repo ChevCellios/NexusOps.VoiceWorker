@@ -65,9 +65,10 @@ var app = builder.Build();
 
 app.UseExceptionHandler();
 app.UseWebSockets();
+app.UseDefaultFiles();
 app.UseStaticFiles();
 app.MapControllers();
-app.MapGet("/", VoiceWorkerStatusPage.WriteAsync);
+app.MapGet("/status", VoiceWorkerStatusPage.WriteAsync);
 app.MapGet("/health", VoiceWorkerStatusPage.WriteHealthAsync);
 app.Map("/voice/media", async context =>
 {
