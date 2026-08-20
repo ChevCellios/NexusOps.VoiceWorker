@@ -1,18 +1,1 @@
-<!doctype html><html lang="hr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>NexusOps Voice Admin</title><style>
-body{font-family:system-ui,sans-serif;margin:0;background:#f4f6fa;color:#182033}main{max-width:1100px;margin:35px auto;padding:0 18px}
-.card{background:white;border-radius:14px;padding:22px;box-shadow:0 6px 25px #17203312;margin-bottom:18px}input,button{font:inherit;padding:10px;border:1px solid #ccd3df;border-radius:8px}input{width:min(420px,70%)}button{cursor:pointer;background:#1769e0;color:white;border-color:#1769e0}
-table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:10px;border-bottom:1px solid #e5e9f0}tr:hover{background:#f7f9fc}.status{font-weight:650}small{color:#667085}pre{white-space:pre-wrap}.error{color:#a82323}
-</style></head><body><main>
-<div class="card"><h1>NexusOps Voice Admin</h1><p>Read-only pregled poziva i transkripata.</p>
-<input id="key" type="password" placeholder="Admin lozinka"><button id="load">Učitaj pozive</button><p id="message"></p></div>
-<div class="card"><table><thead><tr><th>Status</th><th>Kontakt</th><th>Broj</th><th>Provider</th><th>Kreirano</th><th></th></tr></thead><tbody id="rows"><tr><td colspan="6">Upiši lozinku i učitaj podatke.</td></tr></tbody></table></div>
-<div class="card"><h2>Transkript</h2><div id="transcript">Odaberi poziv.</div></div>
-</main><script>
-const rows=document.querySelector('#rows'),msg=document.querySelector('#message'),transcript=document.querySelector('#transcript');
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const headers=()=>({'X-NexusOps-Admin-Key':document.querySelector('#key').value});
-async function api(url){const r=await fetch(url,{headers:headers()});if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}
-document.querySelector('#load').onclick=async()=>{msg.textContent='Učitavam...';try{const data=await api('/admin/api/calls');rows.innerHTML=data.map(x=>`<tr><td class="status">${esc(x.status)}</td><td>${esc(x.contactName||'—')}</td><td>${esc(x.toNumber||'—')}</td><td>${esc(x.provider)}</td><td><small>${new Date(x.createdAt).toLocaleString()}</small></td><td><button data-id="${x.id}">Transkript</button></td></tr>`).join('')||'<tr><td colspan="6">Nema poziva.</td></tr>';msg.textContent=`Učitano: ${data.length}`;rows.querySelectorAll('button').forEach(b=>b.onclick=()=>loadTranscript(b.dataset.id))}catch(e){msg.innerHTML='<span class="error">Greška: '+esc(e.message)+'</span>'}};
-async function loadTranscript(id){transcript.textContent='Učitavam...';try{const data=await api(`/admin/api/calls/${id}/transcript`);transcript.innerHTML=data.map(x=>`<p><strong>${esc(x.speaker)}:</strong> ${esc(x.text)}</p>`).join('')||'Nema transkripta za ovu sesiju.'}catch(e){transcript.innerHTML='<span class="error">Greška: '+esc(e.message)+'</span>'}}
-</script></body></html>
+<!doctype html><html lang="hr"><head><meta http-equiv="refresh" content="0; url=/"><title>NexusOps Command Center</title></head><body><p>Otvori <a href="/">NexusOps Command Center</a>.</p></body></html>
