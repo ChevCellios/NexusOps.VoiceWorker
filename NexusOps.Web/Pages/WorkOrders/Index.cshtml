@@ -1,0 +1,5 @@
+@page
+@model NexusOps.Web.Pages.WorkOrders.IndexModel
+@{ ViewData["Title"]="Radni nalozi"; }
+<div class="page-head"><div><span class="eyebrow">Održavanje</span><h1>Radni nalozi</h1><p>Praćenje svih zahtjeva i intervencija.</p></div><a class="btn btn-primary" asp-page="Create">+ Novi radni nalog</a></div>
+<section class="panel"><div class="table-wrap"><table><thead><tr><th>Broj</th><th>Naziv</th><th>Prioritet</th><th>Status</th><th>Dodijeljeno</th><th>Kreirano</th></tr></thead><tbody>@foreach(var item in Model.WorkOrders){<tr><td>@item.Number</td><td><a asp-page="Details" asp-route-id="@item.Id"><strong>@item.Title</strong></a></td><td><span class="priority @item.Priority.ToString().ToLowerInvariant()">@item.Priority</span></td><td><span class="status @item.Status.ToString().ToLowerInvariant()">@item.Status</span></td><td>@(string.IsNullOrWhiteSpace(item.AssignedTo)?"—":item.AssignedTo)</td><td>@item.CreatedAt.LocalDateTime.ToString("dd.MM.yyyy")</td></tr>}</tbody></table></div></section>

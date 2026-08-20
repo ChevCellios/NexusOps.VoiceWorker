@@ -27,8 +27,12 @@ if (!string.IsNullOrWhiteSpace(railwayPort))
     builder.WebHost.UseUrls($"http://0.0.0.0:{railwayPort}");
 LoadLocalConnectionString(builder.Configuration, builder.Environment.ContentRootPath);
 LoadLocalProviderSecrets(builder.Configuration, builder.Environment.ContentRootPath);
+if (string.Equals(requestedEnvironment, Environments.Development, StringComparison.OrdinalIgnoreCase))
+    builder.Configuration.AddUserSecrets<Program>(optional: true);
 
 builder.Services.AddControllers();
+builder.Services.AddRazorPages()
+    .AddApplicationPart(typeof(NexusOps.Web.Pages.IndexModel).Assembly);
 builder.Services.AddProblemDetails();
 builder.Services.AddHealthChecks()
     .AddCheck<VoiceWorkerHealthCheck>("voice_worker");
@@ -40,6 +44,7 @@ builder.Services.AddOptions<BrowserRealtimeTestOptions>().BindConfiguration(Brow
 builder.Services.AddOptions<AdminOptions>().BindConfiguration(AdminOptions.SectionName);
 var persistenceProvider = builder.Configuration["Persistence:Provider"];
 var connectionString = builder.Configuration.GetConnectionString("NexusOps");
+var tenantId = builder.Configuration["NexusOps:TenantId"];
 var useInMemoryPersistence = string.Equals(persistenceProvider, "InMemory", StringComparison.OrdinalIgnoreCase)
     || string.IsNullOrWhiteSpace(connectionString);
 if (useInMemoryPersistence)
@@ -53,6 +58,18 @@ else
     builder.Services.AddSingleton<IVoiceCallRepository, PostgresVoiceCallRepository>();
     builder.Services.AddSingleton<IVoiceTranscriptRepository, PostgresVoiceTranscriptRepository>();
 }
+if (!string.IsNullOrWhiteSpace(connectionString) && Guid.TryParse(tenantId, out var parsedTenantId))
+{
+    builder.Services.AddSingleton<NexusOps.Web.Services.IOperationsStore>(services =>
+        new NexusOps.Web.Services.PostgresOperationsStore(
+            services.GetRequiredService<NpgsqlDataSource>(),
+            parsedTenantId));
+}
+else
+{
+    builder.Services.AddSingleton<NexusOps.Web.Services.IOperationsStore,
+        NexusOps.Web.Services.InMemoryOperationsStore>();
+}
 builder.Services.AddTransient<IVoiceProvider>(services => services.GetRequiredService<TwilioVoiceProvider>());
 builder.Services.AddSingleton<IRealtimeClient, OpenAIRealtimeClient>();
 builder.Services.AddSingleton<IVoiceRequestAuthorizer, DevelopmentVoiceRequestAuthorizer>();
@@ -65,11 +82,16 @@ var app = builder.Build();
 
 app.UseExceptionHandler();
 app.UseWebSockets();
-app.UseDefaultFiles();
 app.UseStaticFiles();
 app.MapControllers();
+app.MapStaticAssets();
+app.MapRazorPages()
+    .WithStaticAssets();
 app.MapGet("/status", VoiceWorkerStatusPage.WriteAsync);
 app.MapGet("/health", VoiceWorkerStatusPage.WriteHealthAsync);
+app.MapGet("/command-center", () => Results.File(
+    Path.Combine(app.Environment.WebRootPath, "index.html"),
+    "text/html; charset=utf-8"));
 app.Map("/voice/media", async context =>
 {
     var handler = context.RequestServices.GetRequiredService<VoiceMediaWebSocketHandler>();
