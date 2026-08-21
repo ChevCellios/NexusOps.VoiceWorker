@@ -1,5 +1,22 @@
 @page
 @model NexusOps.Web.Pages.Assets.IndexModel
-@{ ViewData["Title"]="Strojevi"; }
-<div class="page-head"><div><span class="eyebrow">Imovina</span><h1>Strojevi</h1><p>Registar opreme i trenutačno stanje.</p></div><a class="btn btn-primary" asp-page="Create">+ Novi stroj</a></div>
-<section class="panel"><div class="table-wrap"><table><thead><tr><th>Šifra</th><th>Stroj</th><th>Lokacija</th><th>Status</th></tr></thead><tbody>@if (!Model.Assets.Any()){<tr><td colspan="4" class="empty-row">Nema strojeva. <a asp-page="Create">Dodaj prvi stroj</a>.</td></tr>}else{foreach(var asset in Model.Assets){<tr><td>@asset.Code</td><td><strong>@asset.Name</strong></td><td>@asset.Location</td><td>@asset.Status</td></tr>}}</tbody></table></div></section>
+@{ ViewData["Title"] = "Strojevi"; }
+
+<div class="page-head">
+    <div><span class="eyebrow">Registar opreme</span><h1>Strojevi</h1><p>Stanje opreme, lokacije i povezana održavanja.</p></div>
+    <a class="btn btn-primary" asp-page="Create">+ Novi stroj</a>
+</div>
+
+<section class="panel"><div class="table-wrap"><table><thead><tr><th>Šifra</th><th>Stroj</th><th>Lokacija</th><th>Status</th></tr></thead><tbody>
+@if (!Model.Assets.Any())
+{
+    <tr><td colspan="4" class="empty-row">Nema strojeva. <a asp-page="Create">Dodaj prvi stroj</a>.</td></tr>
+}
+else
+{
+    foreach (var asset in Model.Assets)
+    {
+        <tr><td>@asset.Code</td><td><a asp-page="Details" asp-route-id="@asset.Id"><strong>@asset.Name</strong></a></td><td>@asset.Location</td><td><span class="asset-status @asset.Status.ToString().ToLowerInvariant()">@asset.Status</span></td></tr>
+    }
+}
+</tbody></table></div></section>
