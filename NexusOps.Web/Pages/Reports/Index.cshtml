@@ -1,6 +1,42 @@
 @page
 @model NexusOps.Web.Pages.Reports.IndexModel
-@{ ViewData["Title"]="Izvještaji"; }
-<div class="page-head"><div><span class="eyebrow">Analitika</span><h1>Izvještaji</h1><p>Početni pregled za upravljanje održavanjem.</p></div></div>
-<section class="stat-grid"><article><span>Otvoreni radni nalozi</span><strong>@Model.Summary.OpenWorkOrders</strong><small>trenutačno</small></article><article><span>Hitni nalozi</span><strong>@Model.Summary.CriticalWorkOrders</strong><small>prioritet za danas</small></article><article><span>Strojevi za provjeru</span><strong>@Model.Summary.AssetsNeedingAttention</strong><small>prema registru</small></article><article><span>Završeno ovaj mjesec</span><strong>@Model.Summary.CompletedThisMonth</strong><small>intervencija</small></article></section>
-<section class="panel"><div class="panel-head"><h2>Sljedeći izvještaji</h2></div><div style="padding:20px;color:#70809d">U sljedećem koraku dodajemo stvarne podatke iz PostgreSQL-a, filtre po datumu i izvoz u CSV/PDF.</div></section>
+@{ ViewData["Title"] = "Izvještaji"; }
+
+<div class="page-head">
+    <div><span class="eyebrow">Analitika održavanja</span><h1>Izvještaji</h1><p>Operativni pregled radnih naloga, rokova i stanja opreme.</p></div>
+    <a class="btn secondary-btn" asp-page-handler="ExportCsv" asp-route-status="@Model.Status" asp-route-priority="@Model.Priority" asp-route-from="@Model.From?.ToString("yyyy-MM-dd")" asp-route-to="@Model.To?.ToString("yyyy-MM-dd")">⇩ Izvezi CSV</a>
+</div>
+
+<section class="stat-grid">
+    <article><span>Otvoreni nalozi</span><strong>@Model.Summary.OpenWorkOrders</strong><small>trenutačno za obradu</small></article>
+    <article><span>Hitni nalozi</span><strong>@Model.Summary.CriticalWorkOrders</strong><small>prioritet za danas</small></article>
+    <article><span>Rok je prošao</span><strong>@Model.OverdueCount</strong><small>u odabranom pregledu</small></article>
+    <article><span>Rok u 48 sati</span><strong>@Model.DueSoonCount</strong><small>za planiranje tima</small></article>
+</section>
+
+<section class="panel filter-panel">
+    <form method="get" class="report-filters">
+        <p><label asp-for="Status">Status</label><select asp-for="Status" asp-items="Html.GetEnumSelectList<NexusOps.Web.Models.WorkOrderStatus>()"><option value="">Svi statusi</option></select></p>
+        <p><label asp-for="Priority">Prioritet</label><select asp-for="Priority" asp-items="Html.GetEnumSelectList<NexusOps.Web.Models.WorkOrderPriority>()"><option value="">Svi prioriteti</option></select></p>
+        <p><label asp-for="From">Otvoreno od</label><input asp-for="From" type="date" /></p>
+        <p><label asp-for="To">Otvoreno do</label><input asp-for="To" type="date" /></p>
+        <div class="filter-actions"><button class="btn btn-primary" type="submit">Primijeni filtre</button><a class="btn secondary-btn" asp-page="Index">Očisti</a></div>
+    </form>
+</section>
+
+<section class="panel timeline-panel">
+    <div class="panel-head"><h2>Radni nalozi</h2><span>@Model.WorkOrders.Count rezultata</span></div>
+    @if (Model.WorkOrders.Count == 0)
+    {
+        <div class="empty-row">Nema naloga za odabrane filtre.</div>
+    }
+    else
+    {
+        <div class="table-wrap"><table><thead><tr><th>Broj</th><th>Nalog</th><th>Prioritet</th><th>Status</th><th>Rok</th><th>Dodijeljeno</th></tr></thead><tbody>
+        @foreach (var item in Model.WorkOrders)
+        {
+            <tr><td>@item.Number</td><td><a asp-page="/WorkOrders/Details" asp-route-id="@item.Id"><strong>@item.Title</strong></a></td><td><span class="priority @item.Priority.ToString().ToLowerInvariant()">@item.Priority</span></td><td><span class="status @item.Status.ToString().ToLowerInvariant()">@item.Status</span></td><td>@(item.DueAt?.LocalDateTime.ToString("dd.MM.yyyy. HH:mm") ?? "—")</td><td>@(string.IsNullOrWhiteSpace(item.AssignedTo) ? "—" : item.AssignedTo)</td></tr>
+        }
+        </tbody></table></div>
+    }
+</section>

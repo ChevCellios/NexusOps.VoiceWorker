@@ -12,6 +12,18 @@ Production deployment uses Railway's existing GitHub autodeploy integration. Ena
 
 Compilable ASP.NET Core starter for the NexusOps voice-call boundary. It exposes the planned REST and WebSocket routes, reads and updates existing `voice_call_sessions` rows in PostgreSQL, and can initiate a Twilio call when the provider is configured. The OpenAI Realtime integration remains a controlled starter implementation.
 
+## NexusOps operations application
+
+The same Railway service also hosts the NexusOps operations interface:
+
+- **Dashboard** — current operational overview and priority work orders.
+- **Work orders** — create an intervention, set a due date and priority, assign it, update its status and review its activity timeline.
+- **Assets** — register equipment, update its operational status and location, and view linked work orders.
+- **Reports** — filter work orders by status, priority and date; highlight overdue and near-due work; export the current result set as a UTF-8 CSV file for Excel.
+- **Voice Command Center** — available at `/command-center` for controlled voice-call testing and monitoring.
+
+The web interface and voice endpoints deliberately share one deployment, domain and PostgreSQL configuration. Application data is separated by the configured `NexusOps:TenantId`.
+
 ## Run
 
 ```powershell
