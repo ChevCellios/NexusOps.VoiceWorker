@@ -1,5 +1,57 @@
 @page
 @model NexusOps.Web.Pages.WorkOrders.CreateModel
-@{ ViewData["Title"]="Novi radni nalog"; }
-<div class="page-head"><div><span class="eyebrow">Održavanje</span><h1>Novi radni nalog</h1><p>Unesi zahtjev za servis ili intervenciju.</p></div></div>
-<section class="panel" style="padding:24px;max-width:760px"><form method="post"><p><label asp-for="Input.Title">Naziv</label><br><input asp-for="Input.Title" style="width:100%;padding:10px"></p><p><label asp-for="Input.AssetId">Stroj</label><br><select asp-for="Input.AssetId" style="width:100%;padding:10px">@foreach(var asset in Model.Assets){<option value="@asset.Id">@asset.Code — @asset.Name</option>}</select></p><p><label asp-for="Input.Priority">Prioritet</label><br><select asp-for="Input.Priority" style="width:100%;padding:10px" asp-items="Html.GetEnumSelectList<NexusOps.Web.Models.WorkOrderPriority>()"></select></p><p><label asp-for="Input.AssignedTo">Dodijeljeno</label><br><input asp-for="Input.AssignedTo" style="width:100%;padding:10px" placeholder="Npr. Ana Kovač"></p><p><label asp-for="Input.Description">Opis</label><br><textarea asp-for="Input.Description" style="width:100%;min-height:100px;padding:10px"></textarea></p><button class="btn btn-primary">Spremi radni nalog</button></form></section>
+@{ ViewData["Title"] = "Novi radni nalog"; }
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">Održavanje / novi unos</span>
+        <h1>Novi radni nalog</h1>
+        <p>Prijavi servis, intervenciju ili preventivni pregled stroja.</p>
+    </div>
+    <a class="btn secondary-btn" asp-page="Index">← Svi nalozi</a>
+</div>
+
+<section class="panel form-panel">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+        <div class="form-grid">
+            <p class="form-wide">
+                <label asp-for="Input.Title">Naziv radnog naloga</label>
+                <input asp-for="Input.Title" placeholder="Npr. Provjera tlaka kompresora" autofocus />
+                <span asp-validation-for="Input.Title" class="field-validation"></span>
+            </p>
+            <p>
+                <label asp-for="Input.AssetId">Stroj</label>
+                <select asp-for="Input.AssetId">
+                    <option value="">Odaberi stroj…</option>
+                    @foreach (var asset in Model.Assets)
+                    {
+                        <option value="@asset.Id">@asset.Code — @asset.Name</option>
+                    }
+                </select>
+                <span asp-validation-for="Input.AssetId" class="field-validation"></span>
+            </p>
+            <p>
+                <label asp-for="Input.Priority">Prioritet</label>
+                <select asp-for="Input.Priority" asp-items="Html.GetEnumSelectList<NexusOps.Web.Models.WorkOrderPriority>()"></select>
+            </p>
+            <p>
+                <label asp-for="Input.AssignedTo">Dodijeljeno osobi</label>
+                <input asp-for="Input.AssignedTo" placeholder="Npr. Ana Kovač" />
+                <span asp-validation-for="Input.AssignedTo" class="field-validation"></span>
+            </p>
+            <p>
+                <label asp-for="Input.DueAt">Rok izvršenja</label>
+                <input asp-for="Input.DueAt" type="datetime-local" />
+            </p>
+            <p class="form-wide">
+                <label asp-for="Input.Description">Opis zadatka</label>
+                <textarea asp-for="Input.Description" rows="5" placeholder="Što treba provjeriti, popraviti ili evidentirati?"></textarea>
+                <span asp-validation-for="Input.Description" class="field-validation"></span>
+            </p>
+        </div>
+        <div class="actions"><button class="btn btn-primary" type="submit">Otvori radni nalog</button></div>
+    </form>
+</section>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

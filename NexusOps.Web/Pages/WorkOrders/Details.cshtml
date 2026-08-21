@@ -1,5 +1,57 @@
 @page "{id:guid}"
 @model NexusOps.Web.Pages.WorkOrders.DetailsModel
-@{ ViewData["Title"]="Detalj radnog naloga"; }
-<div class="page-head"><div><span class="eyebrow">@Model.Order.Number</span><h1>@Model.Order.Title</h1><p>@Model.Order.Description</p></div><span class="status @Model.Order.Status.ToString().ToLowerInvariant()">@Model.Order.Status</span></div>
-<section class="panel" style="padding:24px;max-width:760px"><p><strong>Prioritet:</strong> @Model.Order.Priority</p><p><strong>Dodijeljeno:</strong> @(string.IsNullOrWhiteSpace(Model.Order.AssignedTo)?"Nije dodijeljeno":Model.Order.AssignedTo)</p><p><strong>Rok:</strong> @(Model.Order.DueAt?.LocalDateTime.ToString("dd.MM.yyyy")??"Nije postavljen")</p><hr><form method="post"><label>Novi status</label><br><select asp-for="Status" asp-items="Html.GetEnumSelectList<NexusOps.Web.Models.WorkOrderStatus>()" style="padding:10px"></select><input type="hidden" asp-for="Id"><button class="btn btn-primary">Spremi status</button></form></section>
+@{ ViewData["Title"] = "Detalj radnog naloga"; }
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">@Model.Order.Number</span>
+        <h1>@Model.Order.Title</h1>
+        <p>@(string.IsNullOrWhiteSpace(Model.Order.Description) ? "Nema dodatnog opisa." : Model.Order.Description)</p>
+    </div>
+    <div class="actions"><span class="status @Model.Order.Status.ToString().ToLowerInvariant()">@Model.Order.Status</span><a class="btn secondary-btn" asp-page="Index">← Svi nalozi</a></div>
+</div>
+
+@if (TempData["Success"] is string success)
+{
+    <div class="notice success">✓ @success</div>
+}
+
+<div class="details-grid">
+    <section class="panel detail-panel">
+        <div class="panel-head"><h2>Podaci naloga</h2></div>
+        <dl class="detail-list">
+            <div><dt>Stroj</dt><dd>@(Model.Asset is null ? "Nije povezan" : $"{Model.Asset.Code} — {Model.Asset.Name}")</dd></div>
+            <div><dt>Prioritet</dt><dd><span class="priority @Model.Order.Priority.ToString().ToLowerInvariant()">@Model.Order.Priority</span></dd></div>
+            <div><dt>Dodijeljeno</dt><dd>@(string.IsNullOrWhiteSpace(Model.Order.AssignedTo) ? "Nije dodijeljeno" : Model.Order.AssignedTo)</dd></div>
+            <div><dt>Rok</dt><dd>@(Model.Order.DueAt?.LocalDateTime.ToString("dd.MM.yyyy. HH:mm") ?? "Nije postavljen")</dd></div>
+            <div><dt>Otvoren</dt><dd>@Model.Order.CreatedAt.LocalDateTime.ToString("dd.MM.yyyy. HH:mm")</dd></div>
+        </dl>
+    </section>
+
+    <section class="panel detail-panel">
+        <div class="panel-head"><h2>Promijeni status</h2></div>
+        <form method="post" class="status-form">
+            <label asp-for="Status">Trenutačni tijek rada</label>
+            <select asp-for="Status" asp-items="Html.GetEnumSelectList<NexusOps.Web.Models.WorkOrderStatus>()"></select>
+            <input type="hidden" asp-for="Id" />
+            <button class="btn btn-primary" type="submit">Spremi status</button>
+        </form>
+    </section>
+</div>
+
+<section class="panel timeline-panel">
+    <div class="panel-head"><h2>Aktivnost naloga</h2><span>@Model.Events.Count zapisa</span></div>
+    @if (Model.Events.Count == 0)
+    {
+        <div class="empty-row">Za ovaj nalog još nema evidentiranih aktivnosti.</div>
+    }
+    else
+    {
+        <ol class="timeline">
+        @foreach (var item in Model.Events)
+        {
+            <li><span class="timeline-dot"></span><div><strong>@item.Message</strong><small>@(item.ActorName ?? "Sustav") · @item.CreatedAt.LocalDateTime.ToString("dd.MM.yyyy. HH:mm")</small></div></li>
+        }
+        </ol>
+    }
+</section>

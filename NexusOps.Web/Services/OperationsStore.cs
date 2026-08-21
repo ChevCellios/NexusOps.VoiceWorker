@@ -8,6 +8,7 @@ public interface IOperationsStore
     Asset CreateAsset(CreateAssetInput input);
     IReadOnlyList<WorkOrder> ListWorkOrders();
     WorkOrder? GetWorkOrder(Guid id);
+    IReadOnlyList<WorkOrderEvent> ListWorkOrderEvents(Guid workOrderId);
     void UpdateWorkOrderStatus(Guid id, WorkOrderStatus status, string? actorName);
     DashboardSummary GetSummary();
     WorkOrder CreateWorkOrder(CreateWorkOrderInput input);
@@ -22,6 +23,7 @@ public sealed class InMemoryOperationsStore : IOperationsStore
         new(Guid.Parse("10000000-0000-0000-0000-000000000003"), "Transportna traka 03", "TRK-03", "Linija 3", "Operativan")
     ];
     private readonly List<WorkOrder> _workOrders;
+    private readonly List<WorkOrderEvent> _workOrderEvents = [];
 
     public InMemoryOperationsStore()
     {
@@ -44,11 +46,14 @@ public sealed class InMemoryOperationsStore : IOperationsStore
     }
     public IReadOnlyList<WorkOrder> ListWorkOrders() => _workOrders.OrderByDescending(order => order.CreatedAt).ToArray();
     public WorkOrder? GetWorkOrder(Guid id) => _workOrders.FirstOrDefault(order => order.Id == id);
+    public IReadOnlyList<WorkOrderEvent> ListWorkOrderEvents(Guid workOrderId) =>
+        _workOrderEvents.Where(item => item.WorkOrderId == workOrderId).OrderByDescending(item => item.CreatedAt).ToArray();
     public void UpdateWorkOrderStatus(Guid id, WorkOrderStatus status, string? actorName)
     {
         var order = GetWorkOrder(id) ?? throw new KeyNotFoundException("Radni nalog nije pronađen.");
         var index = _workOrders.IndexOf(order);
         _workOrders[index] = order with { Status = status };
+        _workOrderEvents.Add(new WorkOrderEvent(Guid.NewGuid(), order.Id, "status_changed", $"Status promijenjen u {status}.", actorName, DateTimeOffset.UtcNow));
     }
     public DashboardSummary GetSummary() => new(
         _workOrders.Count(order => order.Status is not WorkOrderStatus.Completed),
@@ -60,8 +65,9 @@ public sealed class InMemoryOperationsStore : IOperationsStore
     {
         if (string.IsNullOrWhiteSpace(input.Title)) throw new ArgumentException("Naslov radnog naloga je obavezan.");
         if (!_assets.Any(asset => asset.Id == input.AssetId)) throw new ArgumentException("Odabrani stroj ne postoji.");
-        var workOrder = new WorkOrder(Guid.NewGuid(), $"RN-{DateTime.UtcNow:yyyy}-{_workOrders.Count + 1:000}", input.Title.Trim(), input.AssetId, input.Priority, WorkOrderStatus.New, input.AssignedTo.Trim(), DateTimeOffset.UtcNow, null, input.Description?.Trim());
+        var workOrder = new WorkOrder(Guid.NewGuid(), $"RN-{DateTime.UtcNow:yyyy}-{_workOrders.Count + 1:000}", input.Title.Trim(), input.AssetId, input.Priority, WorkOrderStatus.New, input.AssignedTo.Trim(), DateTimeOffset.UtcNow, input.DueAt, input.Description?.Trim());
         _workOrders.Add(workOrder);
+        _workOrderEvents.Add(new WorkOrderEvent(Guid.NewGuid(), workOrder.Id, "created", "Radni nalog je otvoren putem web aplikacije.", "Administrator", DateTimeOffset.UtcNow));
         return workOrder;
     }
 }
