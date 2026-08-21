@@ -58,4 +58,22 @@ public sealed class OperationsStoreTests
             AssetId = Guid.NewGuid()
         }));
     }
+
+    [Fact]
+    public void CreateWorkOrder_PersistsDueDateAndCreatesActivity()
+    {
+        var store = new InMemoryOperationsStore();
+        var asset = store.ListAssets().First();
+        var dueAt = DateTimeOffset.UtcNow.AddDays(2);
+
+        var order = store.CreateWorkOrder(new CreateWorkOrderInput
+        {
+            Title = "Preventivni pregled",
+            AssetId = asset.Id,
+            DueAt = dueAt
+        });
+
+        Assert.Equal(dueAt, store.GetWorkOrder(order.Id)?.DueAt);
+        Assert.Contains(store.ListWorkOrderEvents(order.Id), item => item.EventType == "created");
+    }
 }

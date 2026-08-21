@@ -31,6 +31,16 @@ public sealed class PostgresOperationsStore(NpgsqlDataSource dataSource, Guid te
 
     public WorkOrder? GetWorkOrder(Guid id) => ListWorkOrders().FirstOrDefault(order => order.Id == id);
 
+    public IReadOnlyList<WorkOrderEvent> ListWorkOrderEvents(Guid workOrderId)
+    {
+        const string sql = "select id, work_order_id, event_type, message, actor_name, created_at from work_order_events where tenant_id=$1 and work_order_id=$2 order by created_at desc";
+        using var command = dataSource.CreateCommand(sql);
+        command.Parameters.AddWithValue(tenantId); command.Parameters.AddWithValue(workOrderId);
+        using var reader = command.ExecuteReader(); var events = new List<WorkOrderEvent>();
+        while (reader.Read()) events.Add(new WorkOrderEvent(reader.GetGuid(0), reader.GetGuid(1), reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3), reader.IsDBNull(4) ? null : reader.GetString(4), reader.GetFieldValue<DateTimeOffset>(5)));
+        return events;
+    }
+
     public void UpdateWorkOrderStatus(Guid id, WorkOrderStatus status, string? actorName)
     {
         using var command = dataSource.CreateCommand("update work_orders set status=$3, completed_at=case when $3='completed' then now() else completed_at end, updated_at=now() where id=$1 and tenant_id=$2");
@@ -51,10 +61,13 @@ public sealed class PostgresOperationsStore(NpgsqlDataSource dataSource, Guid te
     {
         if (string.IsNullOrWhiteSpace(input.Title)) throw new ArgumentException("Naslov radnog naloga je obavezan.");
         var number = $"RN-{DateTime.UtcNow:yyyy}-{Random.Shared.Next(100000, 999999)}";
-        using var command = dataSource.CreateCommand("insert into work_orders (tenant_id, work_order_number, title, description, asset_id, priority, status, assigned_to_name) values ($1,$2,$3,$4,$5,$6,'new',$7) returning id, created_at");
-        command.Parameters.AddWithValue(tenantId); command.Parameters.AddWithValue(number); command.Parameters.AddWithValue(input.Title.Trim()); command.Parameters.AddWithValue((object?)input.Description?.Trim() ?? DBNull.Value); command.Parameters.AddWithValue(input.AssetId); command.Parameters.AddWithValue(ToDatabase(input.Priority)); command.Parameters.AddWithValue((object?)input.AssignedTo?.Trim() ?? DBNull.Value);
+        using var command = dataSource.CreateCommand("insert into work_orders (tenant_id, work_order_number, title, description, asset_id, priority, status, assigned_to_name, due_at) values ($1,$2,$3,$4,$5,$6,'new',$7,$8) returning id, created_at");
+        command.Parameters.AddWithValue(tenantId); command.Parameters.AddWithValue(number); command.Parameters.AddWithValue(input.Title.Trim()); command.Parameters.AddWithValue((object?)input.Description?.Trim() ?? DBNull.Value); command.Parameters.AddWithValue(input.AssetId); command.Parameters.AddWithValue(ToDatabase(input.Priority)); command.Parameters.AddWithValue((object?)input.AssignedTo?.Trim() ?? DBNull.Value); command.Parameters.AddWithValue((object?)input.DueAt ?? DBNull.Value);
         using var reader = command.ExecuteReader(); reader.Read();
-        return new(reader.GetGuid(0), number, input.Title.Trim(), input.AssetId, input.Priority, WorkOrderStatus.New, input.AssignedTo?.Trim() ?? string.Empty, reader.GetFieldValue<DateTimeOffset>(1), null, input.Description?.Trim());
+        var workOrder = new WorkOrder(reader.GetGuid(0), number, input.Title.Trim(), input.AssetId, input.Priority, WorkOrderStatus.New, input.AssignedTo?.Trim() ?? string.Empty, reader.GetFieldValue<DateTimeOffset>(1), input.DueAt, input.Description?.Trim());
+        using var eventCommand = dataSource.CreateCommand("insert into work_order_events (tenant_id, work_order_id, event_type, message, actor_name) values ($1,$2,'created','Radni nalog je otvoren putem web aplikacije.','Administrator')");
+        eventCommand.Parameters.AddWithValue(tenantId); eventCommand.Parameters.AddWithValue(workOrder.Id); eventCommand.ExecuteNonQuery();
+        return workOrder;
     }
 
     private IReadOnlyList<Asset> ReadAssets(string sql) { using var command=dataSource.CreateCommand(sql); command.Parameters.AddWithValue(tenantId); using var reader=command.ExecuteReader(); var assets=new List<Asset>(); while(reader.Read()) assets.Add(new(reader.GetGuid(0),reader.GetString(1),reader.GetString(2),reader.GetString(3),reader.GetString(4))); return assets; }
