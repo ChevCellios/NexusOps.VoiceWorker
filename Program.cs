@@ -89,9 +89,7 @@ app.MapRazorPages()
     .WithStaticAssets();
 app.MapGet("/status", VoiceWorkerStatusPage.WriteAsync);
 app.MapGet("/health", VoiceWorkerStatusPage.WriteHealthAsync);
-app.MapGet("/command-center", () => Results.File(
-    Path.Combine(app.Environment.WebRootPath, "index.html"),
-    "text/html; charset=utf-8"));
+app.MapGet("/command-center", () => Results.Redirect("/index.html", permanent: false));
 app.Map("/voice/media", async context =>
 {
     var handler = context.RequestServices.GetRequiredService<VoiceMediaWebSocketHandler>();
