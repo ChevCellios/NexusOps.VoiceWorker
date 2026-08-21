@@ -1,0 +1,49 @@
+@page "{id:guid}"
+@model NexusOps.Web.Pages.Assets.DetailsModel
+@{ ViewData["Title"] = "Detalj stroja"; }
+
+<div class="page-head">
+    <div><span class="eyebrow">@Model.Asset.Code</span><h1>@Model.Asset.Name</h1><p>Lokacija: @Model.Asset.Location</p></div>
+    <div class="actions"><span class="asset-status @Model.Asset.Status.ToString().ToLowerInvariant()">@Model.Asset.Status</span><a class="btn secondary-btn" asp-page="Index">← Svi strojevi</a></div>
+</div>
+
+@if (TempData["Success"] is string success)
+{
+    <div class="notice success">✓ @success</div>
+}
+
+<div class="details-grid">
+    <section class="panel detail-panel">
+        <div class="panel-head"><h2>Stanje stroja</h2></div>
+        <dl class="detail-list"><div><dt>Šifra</dt><dd>@Model.Asset.Code</dd></div><div><dt>Otvoreni nalozi</dt><dd>@Model.WorkOrders.Count(item => item.Status is not NexusOps.Web.Models.WorkOrderStatus.Completed)</dd></div><div><dt>Ukupno naloga</dt><dd>@Model.WorkOrders.Count</dd></div></dl>
+    </section>
+    <section class="panel detail-panel">
+        <div class="panel-head"><h2>Ažuriraj stanje</h2></div>
+        <form method="post" class="status-form">
+            <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+            <label asp-for="Input.Location">Lokacija</label><input asp-for="Input.Location" />
+            <label asp-for="Input.Status">Status</label><select asp-for="Input.Status" asp-items="Html.GetEnumSelectList<NexusOps.Web.Models.AssetStatus>()"></select>
+            <input type="hidden" asp-for="Id" />
+            <button class="btn btn-primary" type="submit">Spremi promjene</button>
+        </form>
+    </section>
+</div>
+
+<section class="panel timeline-panel">
+    <div class="panel-head"><h2>Povezani radni nalozi</h2><a asp-page="/WorkOrders/Create">+ Novi nalog</a></div>
+    @if (Model.WorkOrders.Count == 0)
+    {
+        <div class="empty-row">Za ovaj stroj još nema radnih naloga.</div>
+    }
+    else
+    {
+        <div class="table-wrap"><table><thead><tr><th>Broj</th><th>Nalog</th><th>Prioritet</th><th>Status</th><th>Rok</th></tr></thead><tbody>
+        @foreach (var item in Model.WorkOrders)
+        {
+            <tr><td>@item.Number</td><td><a asp-page="/WorkOrders/Details" asp-route-id="@item.Id"><strong>@item.Title</strong></a></td><td><span class="priority @item.Priority.ToString().ToLowerInvariant()">@item.Priority</span></td><td><span class="status @item.Status.ToString().ToLowerInvariant()">@item.Status</span></td><td>@(item.DueAt?.LocalDateTime.ToString("dd.MM.yyyy.") ?? "—")</td></tr>
+        }
+        </tbody></table></div>
+    }
+</section>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

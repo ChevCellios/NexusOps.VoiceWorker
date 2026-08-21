@@ -19,13 +19,34 @@ public enum WorkOrderPriority
     [Display(Name = "Hitno")] Critical
 }
 
-public sealed record Asset(Guid Id, string Name, string Code, string Location, string Status);
+public enum AssetStatus
+{
+    [Display(Name = "Operativan")] Operational,
+    [Display(Name = "Potrebna provjera")] AttentionRequired,
+    [Display(Name = "Izvan pogona")] OutOfService,
+    [Display(Name = "Umirovljen")] Retired
+}
+
+public sealed record Asset(Guid Id, string Name, string Code, string Location, AssetStatus Status);
 
 public sealed class CreateAssetInput
 {
+    [Required(ErrorMessage = "Unesi naziv stroja.")]
+    [StringLength(200)]
     public string Name { get; init; } = string.Empty;
+    [Required(ErrorMessage = "Unesi šifru stroja.")]
+    [StringLength(80)]
     public string Code { get; init; } = string.Empty;
+    [StringLength(200)]
     public string Location { get; init; } = string.Empty;
+}
+
+public sealed class UpdateAssetInput
+{
+    [Required(ErrorMessage = "Unesi lokaciju stroja.")]
+    [StringLength(200)]
+    public string Location { get; init; } = string.Empty;
+    public AssetStatus Status { get; init; } = AssetStatus.Operational;
 }
 
 public sealed record WorkOrder(

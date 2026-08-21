@@ -11,13 +11,23 @@ public sealed class PostgresOperationsStore(NpgsqlDataSource dataSource, Guid te
         return ReadAssets(sql);
     }
 
+    public Asset? GetAsset(Guid id) => ListAssets().FirstOrDefault(asset => asset.Id == id);
+
     public Asset CreateAsset(CreateAssetInput input)
     {
         if (string.IsNullOrWhiteSpace(input.Name) || string.IsNullOrWhiteSpace(input.Code)) throw new ArgumentException("Naziv i šifra stroja su obavezni.");
         using var command = dataSource.CreateCommand("insert into assets (tenant_id, asset_code, name, location) values ($1,$2,$3,$4) returning id, name, asset_code, coalesce(location, ''), status");
         command.Parameters.AddWithValue(tenantId); command.Parameters.AddWithValue(input.Code.Trim()); command.Parameters.AddWithValue(input.Name.Trim()); command.Parameters.AddWithValue((object?)input.Location?.Trim() ?? DBNull.Value);
         using var reader = command.ExecuteReader(); reader.Read();
-        return new(reader.GetGuid(0), reader.GetString(1), reader.GetString(2), reader.GetString(3), reader.GetString(4));
+        return new(reader.GetGuid(0), reader.GetString(1), reader.GetString(2), reader.GetString(3), ParseAssetStatus(reader.GetString(4)));
+    }
+
+    public void UpdateAsset(Guid id, UpdateAssetInput input)
+    {
+        if (string.IsNullOrWhiteSpace(input.Location)) throw new ArgumentException("Lokacija stroja je obavezna.");
+        using var command = dataSource.CreateCommand("update assets set location=$3, status=$4, updated_at=now() where id=$1 and tenant_id=$2");
+        command.Parameters.AddWithValue(id); command.Parameters.AddWithValue(tenantId); command.Parameters.AddWithValue(input.Location.Trim()); command.Parameters.AddWithValue(ToDatabase(input.Status));
+        if (command.ExecuteNonQuery() != 1) throw new KeyNotFoundException("Stroj nije pronađen.");
     }
 
     public IReadOnlyList<WorkOrder> ListWorkOrders()
@@ -70,8 +80,15 @@ public sealed class PostgresOperationsStore(NpgsqlDataSource dataSource, Guid te
         return workOrder;
     }
 
-    private IReadOnlyList<Asset> ReadAssets(string sql) { using var command=dataSource.CreateCommand(sql); command.Parameters.AddWithValue(tenantId); using var reader=command.ExecuteReader(); var assets=new List<Asset>(); while(reader.Read()) assets.Add(new(reader.GetGuid(0),reader.GetString(1),reader.GetString(2),reader.GetString(3),reader.GetString(4))); return assets; }
+    private IReadOnlyList<Asset> ReadAssets(string sql) { using var command=dataSource.CreateCommand(sql); command.Parameters.AddWithValue(tenantId); using var reader=command.ExecuteReader(); var assets=new List<Asset>(); while(reader.Read()) assets.Add(new(reader.GetGuid(0),reader.GetString(1),reader.GetString(2),reader.GetString(3),ParseAssetStatus(reader.GetString(4)))); return assets; }
     private static WorkOrderPriority ParsePriority(string value) => Enum.Parse<WorkOrderPriority>(value, true);
     private static WorkOrderStatus ParseStatus(string value) => value == "waiting_parts" ? WorkOrderStatus.WaitingParts : Enum.Parse<WorkOrderStatus>(value.Replace("_", ""), true);
+    private static AssetStatus ParseAssetStatus(string value) => Enum.Parse<AssetStatus>(value.Replace("_", ""), true);
     private static string ToDatabase(WorkOrderPriority value) => value.ToString().ToLowerInvariant();
+    private static string ToDatabase(AssetStatus value) => value switch
+    {
+        AssetStatus.AttentionRequired => "attention_required",
+        AssetStatus.OutOfService => "out_of_service",
+        _ => value.ToString().ToLowerInvariant()
+    };
 }

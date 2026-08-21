@@ -5,7 +5,9 @@ namespace NexusOps.Web.Services;
 public interface IOperationsStore
 {
     IReadOnlyList<Asset> ListAssets();
+    Asset? GetAsset(Guid id);
     Asset CreateAsset(CreateAssetInput input);
+    void UpdateAsset(Guid id, UpdateAssetInput input);
     IReadOnlyList<WorkOrder> ListWorkOrders();
     WorkOrder? GetWorkOrder(Guid id);
     IReadOnlyList<WorkOrderEvent> ListWorkOrderEvents(Guid workOrderId);
@@ -18,9 +20,9 @@ public sealed class InMemoryOperationsStore : IOperationsStore
 {
     private readonly List<Asset> _assets =
     [
-        new(Guid.Parse("10000000-0000-0000-0000-000000000001"), "CNC glodalica 01", "CNC-01", "Pogon A", "Operativan"),
-        new(Guid.Parse("10000000-0000-0000-0000-000000000002"), "Kompresor 02", "CMP-02", "Pogon B", "Potrebna provjera"),
-        new(Guid.Parse("10000000-0000-0000-0000-000000000003"), "Transportna traka 03", "TRK-03", "Linija 3", "Operativan")
+        new(Guid.Parse("10000000-0000-0000-0000-000000000001"), "CNC glodalica 01", "CNC-01", "Pogon A", AssetStatus.Operational),
+        new(Guid.Parse("10000000-0000-0000-0000-000000000002"), "Kompresor 02", "CMP-02", "Pogon B", AssetStatus.AttentionRequired),
+        new(Guid.Parse("10000000-0000-0000-0000-000000000003"), "Transportna traka 03", "TRK-03", "Linija 3", AssetStatus.Operational)
     ];
     private readonly List<WorkOrder> _workOrders;
     private readonly List<WorkOrderEvent> _workOrderEvents = [];
@@ -36,13 +38,20 @@ public sealed class InMemoryOperationsStore : IOperationsStore
     }
 
     public IReadOnlyList<Asset> ListAssets() => _assets;
+    public Asset? GetAsset(Guid id) => _assets.FirstOrDefault(asset => asset.Id == id);
     public Asset CreateAsset(CreateAssetInput input)
     {
         if (string.IsNullOrWhiteSpace(input.Name) || string.IsNullOrWhiteSpace(input.Code)) throw new ArgumentException("Naziv i šifra stroja su obavezni.");
         if (_assets.Any(asset => string.Equals(asset.Code, input.Code.Trim(), StringComparison.OrdinalIgnoreCase))) throw new ArgumentException("Stroj s tom šifrom već postoji.");
-        var asset = new Asset(Guid.NewGuid(), input.Name.Trim(), input.Code.Trim(), input.Location.Trim(), "Operativan");
+        var asset = new Asset(Guid.NewGuid(), input.Name.Trim(), input.Code.Trim(), input.Location.Trim(), AssetStatus.Operational);
         _assets.Add(asset);
         return asset;
+    }
+    public void UpdateAsset(Guid id, UpdateAssetInput input)
+    {
+        var asset = GetAsset(id) ?? throw new KeyNotFoundException("Stroj nije pronađen.");
+        if (string.IsNullOrWhiteSpace(input.Location)) throw new ArgumentException("Lokacija stroja je obavezna.");
+        _assets[_assets.IndexOf(asset)] = asset with { Location = input.Location.Trim(), Status = input.Status };
     }
     public IReadOnlyList<WorkOrder> ListWorkOrders() => _workOrders.OrderByDescending(order => order.CreatedAt).ToArray();
     public WorkOrder? GetWorkOrder(Guid id) => _workOrders.FirstOrDefault(order => order.Id == id);
@@ -58,7 +67,7 @@ public sealed class InMemoryOperationsStore : IOperationsStore
     public DashboardSummary GetSummary() => new(
         _workOrders.Count(order => order.Status is not WorkOrderStatus.Completed),
         _workOrders.Count(order => order.Priority is WorkOrderPriority.Critical && order.Status is not WorkOrderStatus.Completed),
-        _assets.Count(asset => asset.Status != "Operativan"),
+        _assets.Count(asset => asset.Status is not AssetStatus.Operational),
         _workOrders.Count(order => order.Status is WorkOrderStatus.Completed && order.CreatedAt.Month == DateTime.UtcNow.Month));
 
     public WorkOrder CreateWorkOrder(CreateWorkOrderInput input)
