@@ -1,0 +1,5 @@
+@page "{id:guid}"
+@model NexusOps.Web.Pages.WorkOrders.DetailsModel
+@{ ViewData["Title"]="Detalj radnog naloga"; }
+<div class="page-head"><div><span class="eyebrow">@Model.Order.Number</span><h1>@Model.Order.Title</h1><p>@Model.Order.Description</p></div><span class="status @Model.Order.Status.ToString().ToLowerInvariant()">@Model.Order.Status</span></div>
+<section class="panel" style="padding:24px;max-width:760px"><p><strong>Prioritet:</strong> @Model.Order.Priority</p><p><strong>Dodijeljeno:</strong> @(string.IsNullOrWhiteSpace(Model.Order.AssignedTo)?"Nije dodijeljeno":Model.Order.AssignedTo)</p><p><strong>Rok:</strong> @(Model.Order.DueAt?.LocalDateTime.ToString("dd.MM.yyyy")??"Nije postavljen")</p><hr><form method="post"><label>Novi status</label><br><select asp-for="Status" asp-items="Html.GetEnumSelectList<NexusOps.Web.Models.WorkOrderStatus>()" style="padding:10px"></select><input type="hidden" asp-for="Id"><button class="btn btn-primary">Spremi status</button></form></section>

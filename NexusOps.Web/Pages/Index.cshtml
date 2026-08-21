@@ -1,0 +1,12 @@
+@page
+@model IndexModel
+@{ ViewData["Title"] = "Command Center"; }
+<div class="page-head"><div><span class="eyebrow">Operativni pregled</span><h1>Dobro jutro</h1><p>Pregled strojeva i radnih naloga na jednom mjestu.</p></div><div class="actions"><a class="btn secondary-btn" asp-page="/Assets/Create">+ Novi stroj</a><a class="btn btn-primary" asp-page="/WorkOrders/Create">+ Novi radni nalog</a></div></div>
+<section class="stat-grid">
+    <article><span>Otvoreni nalozi</span><strong>@Model.Summary.OpenWorkOrders</strong><small>za obradu</small></article>
+    <article><span>Hitni nalozi</span><strong>@Model.Summary.CriticalWorkOrders</strong><small>traže pažnju</small></article>
+    <article><span>Strojevi za provjeru</span><strong>@Model.Summary.AssetsNeedingAttention</strong><small>potrebna intervencija</small></article>
+    <article><span>Završeno ovaj mjesec</span><strong>@Model.Summary.CompletedThisMonth</strong><small>radnih naloga</small></article>
+</section>
+<section class="quick-actions"><a asp-page="/Assets/Create"><strong>▣ Dodaj stroj</strong><span>Unesi opremu u registar</span></a><a asp-page="/WorkOrders/Create"><strong>✓ Otvori radni nalog</strong><span>Prijavi servis ili intervenciju</span></a><a asp-page="/Reports/Index"><strong>◫ Otvori izvještaje</strong><span>Pregled rada i prioriteta</span></a></section>
+<section class="panel"><div class="panel-head"><h2>Prioritetni radni nalozi</h2><a asp-page="/WorkOrders/Index">Svi nalozi →</a></div><div class="table-wrap"><table><thead><tr><th>Broj</th><th>Radni nalog</th><th>Prioritet</th><th>Status</th><th>Dodijeljeno</th></tr></thead><tbody>@foreach (var item in Model.WorkOrders) { <tr><td>@item.Number</td><td><strong>@item.Title</strong></td><td><span class="priority @item.Priority.ToString().ToLowerInvariant()">@item.Priority</span></td><td><span class="status @item.Status.ToString().ToLowerInvariant()">@item.Status</span></td><td>@(string.IsNullOrWhiteSpace(item.AssignedTo) ? "Nije dodijeljeno" : item.AssignedTo)</td></tr> }</tbody></table></div></section>

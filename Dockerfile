@@ -2,6 +2,7 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 COPY NexusOps.VoiceWorker.csproj ./
+COPY NexusOps.Web/NexusOps.Web.csproj NexusOps.Web/
 RUN dotnet restore NexusOps.VoiceWorker.csproj
 
 COPY . ./

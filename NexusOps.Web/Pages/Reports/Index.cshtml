@@ -1,0 +1,6 @@
+@page
+@model NexusOps.Web.Pages.Reports.IndexModel
+@{ ViewData["Title"]="Izvještaji"; }
+<div class="page-head"><div><span class="eyebrow">Analitika</span><h1>Izvještaji</h1><p>Početni pregled za upravljanje održavanjem.</p></div></div>
+<section class="stat-grid"><article><span>Otvoreni radni nalozi</span><strong>@Model.Summary.OpenWorkOrders</strong><small>trenutačno</small></article><article><span>Hitni nalozi</span><strong>@Model.Summary.CriticalWorkOrders</strong><small>prioritet za danas</small></article><article><span>Strojevi za provjeru</span><strong>@Model.Summary.AssetsNeedingAttention</strong><small>prema registru</small></article><article><span>Završeno ovaj mjesec</span><strong>@Model.Summary.CompletedThisMonth</strong><small>intervencija</small></article></section>
+<section class="panel"><div class="panel-head"><h2>Sljedeći izvještaji</h2></div><div style="padding:20px;color:#70809d">U sljedećem koraku dodajemo stvarne podatke iz PostgreSQL-a, filtre po datumu i izvoz u CSV/PDF.</div></section>

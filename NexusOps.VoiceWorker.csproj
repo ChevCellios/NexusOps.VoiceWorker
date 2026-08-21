@@ -1,13 +1,16 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>80033c20-6745-4207-a4df-ee720b44dc85</UserSecretsId>
+    <DefaultItemExcludes>$(DefaultItemExcludes);NexusOps.Web\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Npgsql" Version="10.0.3" />
+    <ProjectReference Include="NexusOps.Web\NexusOps.Web.csproj" />
   </ItemGroup>
 
 </Project>

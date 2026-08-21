@@ -1,0 +1,5 @@
+@page
+@model NexusOps.Web.Pages.Assets.CreateModel
+@{ ViewData["Title"]="Novi stroj"; }
+<div class="page-head"><div><span class="eyebrow">Imovina</span><h1>Novi stroj</h1><p>Dodaj opremu u registar.</p></div></div>
+<section class="panel" style="padding:24px;max-width:760px"><form method="post"><p><label asp-for="Input.Name">Naziv stroja</label><br><input asp-for="Input.Name" style="width:100%;padding:10px" placeholder="Npr. CNC glodalica 01"></p><p><label asp-for="Input.Code">Šifra stroja</label><br><input asp-for="Input.Code" style="width:100%;padding:10px" placeholder="Npr. CNC-01"></p><p><label asp-for="Input.Location">Lokacija</label><br><input asp-for="Input.Location" style="width:100%;padding:10px" placeholder="Npr. Pogon A"></p><button class="btn btn-primary">Spremi stroj</button></form></section>
