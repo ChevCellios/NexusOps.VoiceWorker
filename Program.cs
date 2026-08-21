@@ -89,6 +89,9 @@ app.MapRazorPages()
     .WithStaticAssets();
 app.MapGet("/status", VoiceWorkerStatusPage.WriteAsync);
 app.MapGet("/health", VoiceWorkerStatusPage.WriteHealthAsync);
+app.MapGet("/nexusops-ui.css", () => Results.File(
+    Path.Combine(app.Environment.ContentRootPath, "wwwroot", "css", "site.css"),
+    "text/css; charset=utf-8"));
 app.MapGet("/command-center", () => Results.Redirect("/index.html", permanent: false));
 app.Map("/voice/media", async context =>
 {
