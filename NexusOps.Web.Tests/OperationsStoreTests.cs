@@ -1,5 +1,6 @@
 using NexusOps.Web.Models;
 using NexusOps.Web.Services;
+using Xunit;
 
 namespace NexusOps.Web.Tests;
 
