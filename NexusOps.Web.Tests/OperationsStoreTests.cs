@@ -1,4 +1,5 @@
 using NexusOps.Web.Models;
+using NexusOps.Web.Pages.Reports;
 using NexusOps.Web.Services;
 using Xunit;
 
@@ -75,5 +76,34 @@ public sealed class OperationsStoreTests
 
         Assert.Equal(dueAt, store.GetWorkOrder(order.Id)?.DueAt);
         Assert.Contains(store.ListWorkOrderEvents(order.Id), item => item.EventType == "created");
+    }
+
+    [Fact]
+    public void UpdateAsset_PersistsLocationAndStatus()
+    {
+        var store = new InMemoryOperationsStore();
+        var asset = store.ListAssets().First();
+
+        store.UpdateAsset(asset.Id, new UpdateAssetInput
+        {
+            Location = "Pogon D",
+            Status = AssetStatus.OutOfService
+        });
+
+        var updated = store.GetAsset(asset.Id);
+        Assert.Equal("Pogon D", updated?.Location);
+        Assert.Equal(AssetStatus.OutOfService, updated?.Status);
+    }
+
+    [Fact]
+    public void Reports_FilterWorkOrdersByStatus()
+    {
+        var store = new InMemoryOperationsStore();
+        var page = new IndexModel(store) { Status = WorkOrderStatus.InProgress };
+
+        page.OnGet();
+
+        Assert.NotEmpty(page.WorkOrders);
+        Assert.All(page.WorkOrders, order => Assert.Equal(WorkOrderStatus.InProgress, order.Status));
     }
 }
