@@ -1,8 +1,12 @@
 # NexusOps.VoiceWorker
 
+[![CI](https://github.com/ChevCellios/NexusOps.VoiceWorker/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ChevCellios/NexusOps.VoiceWorker/actions/workflows/ci.yml)
+![.NET 9](https://img.shields.io/badge/.NET-9.0-512BD4)
+![Railway](https://img.shields.io/badge/deploy-Railway-0B0D0E)
+
 ## CI/CD
 
-GitHub Actions workflow `.github/workflows/ci.yml` restores, builds, tests, and verifies the Docker image on pushes and pull requests targeting `main`.
+GitHub Actions workflow `.github/workflows/ci.yml` restores, builds, runs unit tests, and verifies the Docker image on pushes and pull requests targeting `main`. It can also be started manually from the **Actions** tab.
 
 Production deployment uses Railway's existing GitHub autodeploy integration. Enable **Wait for CI** in the Railway service settings so Railway deploys a commit only after the GitHub workflow succeeds. No Railway token is required in GitHub for this setup.
 

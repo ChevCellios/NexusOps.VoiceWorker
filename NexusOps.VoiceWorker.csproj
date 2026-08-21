@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>80033c20-6745-4207-a4df-ee720b44dc85</UserSecretsId>
-    <DefaultItemExcludes>$(DefaultItemExcludes);NexusOps.Web\**</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);NexusOps.Web\**;NexusOps.Web.Tests\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
