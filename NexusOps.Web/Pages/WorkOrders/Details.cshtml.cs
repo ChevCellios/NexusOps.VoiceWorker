@@ -26,7 +26,7 @@ public sealed class DetailsModel(IOperationsStore store) : PageModel
     {
         try
         {
-            store.UpdateWorkOrderStatus(Id, Status, "Administrator");
+            store.UpdateWorkOrderStatus(Id, Status, User.Identity?.Name ?? "Sustav");
             TempData["Success"] = "Status radnog naloga je ažuriran.";
         }
         catch (KeyNotFoundException)

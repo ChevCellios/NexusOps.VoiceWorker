@@ -119,8 +119,12 @@ if (supabaseAuth.Enabled && supabaseAuth.RequireAuthenticatedUsers)
             return;
         }
 
-        var isViewer = context.User.IsInRole(NexusOpsRole.Viewer.ToString());
-        if (isRazorPageRequest && !isAccountRoute && HttpMethods.IsPost(context.Request.Method) && isViewer)
+        var isOperationsManager = context.User.IsInRole(NexusOpsRole.Administrator.ToString()) ||
+                                  context.User.IsInRole(NexusOpsRole.Manager.ToString());
+        var isTechnicianUpdatingStatus = context.User.IsInRole(NexusOpsRole.Technician.ToString()) &&
+                                         context.Request.Path.StartsWithSegments("/WorkOrders/Details");
+        if (isRazorPageRequest && !isAccountRoute && HttpMethods.IsPost(context.Request.Method) &&
+            !isOperationsManager && !isTechnicianUpdatingStatus)
         {
             context.Response.Redirect("/Account/AccessDenied");
             return;

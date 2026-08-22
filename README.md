@@ -40,7 +40,7 @@ SupabaseAuth__Url=https://YOUR_PROJECT.supabase.co
 SupabaseAuth__PublishableKey=YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY
 ```
 
-`PublishableKey` is intended for client-side identification and is not a service-role key. Never add a Supabase `service_role` key to Railway or source control. Once enabled, users without a `nexusops_user_roles` row cannot sign in. `Viewer` users can inspect data but cannot submit changes; `Technician`, `Manager`, and `Administrator` can work with operational forms.
+`PublishableKey` is intended for client-side identification and is not a service-role key. Never add a Supabase `service_role` key to Railway or source control. Once enabled, users without a `nexusops_user_roles` row cannot sign in. `Viewer` users can inspect data but cannot submit changes. `Technician` users can update a work order's status. `Manager` and `Administrator` users can create and edit operational records. NexusOps records the signed-in e-mail in work-order activity events.
 
 ## Run
 
