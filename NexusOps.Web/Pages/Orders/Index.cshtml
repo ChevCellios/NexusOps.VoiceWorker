@@ -1,0 +1,11 @@
+@page
+@model NexusOps.Web.Pages.Orders.IndexModel
+@{ ViewData["Title"] = "Narudžbe"; }
+<div class="page-head"><div><span class="eyebrow">Prodaja i izvršenje</span><h1>Narudžbe kupaca</h1><p>Zaprimanje narudžbe automatski stvara i dodjeljuje radni nalog.</p></div></div>
+@if (TempData["Success"] is string success) { <p class="success-message">@success</p> }
+@if (User.IsInRole("Administrator") || User.IsInRole("Manager"))
+{
+    <section class="panel form-panel"><div class="panel-head"><h2>Nova narudžba</h2><span>Automatski radni nalog</span></div><form method="post"><div asp-validation-summary="ModelOnly" class="validation-summary"></div><div class="form-grid"><p><label asp-for="Input.CustomerName">Kupac</label><input asp-for="Input.CustomerName" autofocus /><span asp-validation-for="Input.CustomerName" class="field-validation"></span></p><p><label asp-for="Input.CustomerReference">Referenca kupca</label><input asp-for="Input.CustomerReference" placeholder="Broj narudžbenice" /></p><p><label asp-for="Input.Priority">Prioritet</label><select asp-for="Input.Priority" asp-items="Html.GetEnumSelectList<NexusOps.Web.Models.WorkOrderPriority>()"></select></p><p><label asp-for="Input.RequiredBy">Rok izvršenja</label><input asp-for="Input.RequiredBy" type="datetime-local" /></p><p class="form-wide"><label asp-for="Input.Description">Opis narudžbe</label><textarea asp-for="Input.Description" rows="4" placeholder="Što treba proizvesti, pripremiti, servisirati ili isporučiti?"></textarea><span asp-validation-for="Input.Description" class="field-validation"></span></p></div><div class="actions"><button class="btn btn-primary" type="submit">Zaprimi i otvori nalog</button></div></form></section>
+}
+<section class="panel table-panel"><div class="panel-head"><h2>Zadnje narudžbe</h2><span>@Model.Orders.Count ukupno</span></div><div class="table-wrap"><table><thead><tr><th>Broj</th><th>Kupac</th><th>Opis</th><th>Izvršitelj</th><th>Radni nalog</th><th>Rok</th></tr></thead><tbody>@foreach(var order in Model.Orders){<tr><td>@order.Number</td><td><strong>@order.CustomerName</strong></td><td>@order.Description</td><td>@order.AssignedTo</td><td>@order.WorkOrderNumber</td><td>@(order.RequiredBy?.LocalDateTime.ToString("dd.MM.yyyy HH:mm") ?? "—")</td></tr>}</tbody></table></div></section>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }
