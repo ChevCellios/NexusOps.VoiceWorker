@@ -1,0 +1,51 @@
+@page
+@model NexusOps.Web.Pages.Finance.IndexModel
+@using NexusOps.Web.Models
+@{ ViewData["Title"] = "Financije"; }
+
+<div class="page-head"><div><span class="eyebrow">Financijski centar</span><h1>Financije</h1><p>Operativni pregled sredstava, prihoda i troškova.</p></div></div>
+
+@if (TempData["Success"] is string success) { <div class="notice success">✓ @success</div> }
+@if (TempData["Error"] is string error) { <div class="notice validation">@error</div> }
+
+<section class="stat-grid">
+    <article><span>Raspoloživo stanje</span><strong>@Model.Summary.TotalBalance.ToString("N2") €</strong><small>zbroj aktivnih računa</small></article>
+    <article><span>Prihodi ovaj mjesec</span><strong>@Model.Summary.IncomeThisMonth.ToString("N2") €</strong><small>evidentirani priljevi</small></article>
+    <article><span>Troškovi ovaj mjesec</span><strong>@Model.Summary.ExpenseThisMonth.ToString("N2") €</strong><small>evidentirani odljevi</small></article>
+    <article><span>Planirane obveze</span><strong>@Model.Summary.PlannedPayments</strong><small>rate i plaćanja</small></article>
+</section>
+
+@if (User.IsInRole("Administrator") || User.IsInRole("Manager"))
+{
+    <section class="details-grid">
+        <section class="panel form-panel"><div class="section-heading"><div><span class="eyebrow">Postavka</span><h2>Novi račun</h2></div></div>
+            <form method="post" asp-page-handler="CreateAccount" class="form-grid">
+                <div class="form-field"><label asp-for="Account.Name">Naziv</label><input asp-for="Account.Name" placeholder="npr. Glavni račun" /></div>
+                <div class="form-field"><label asp-for="Account.Type">Vrsta</label><select asp-for="Account.Type" asp-items="Html.GetEnumSelectList<FinancialAccountType>()"></select></div>
+                <div class="form-field"><label asp-for="Account.OpeningBalance">Početno stanje (€)</label><input asp-for="Account.OpeningBalance" type="number" step="0.01" /></div>
+                <div class="form-actions"><button class="btn btn-primary" type="submit">+ Dodaj račun</button></div>
+            </form>
+        </section>
+        <section class="panel form-panel"><div class="section-heading"><div><span class="eyebrow">Evidencija</span><h2>Novi prihod ili trošak</h2></div></div>
+            <form method="post" asp-page-handler="CreateTransaction" class="form-grid">
+                <div class="form-field"><label asp-for="Transaction.AccountId">Račun</label><select asp-for="Transaction.AccountId"><option value="">Odaberi račun</option>@foreach (var account in Model.Accounts) { <option value="@account.Id">@account.Name</option> }</select></div>
+                <div class="form-field"><label asp-for="Transaction.Type">Vrsta</label><select asp-for="Transaction.Type" asp-items="Html.GetEnumSelectList<FinancialTransactionType>()"></select></div>
+                <div class="form-field"><label asp-for="Transaction.Amount">Iznos (€)</label><input asp-for="Transaction.Amount" type="number" min="0.01" step="0.01" /></div>
+                <div class="form-field"><label asp-for="Transaction.OccurredOn">Datum</label><input asp-for="Transaction.OccurredOn" type="date" /></div>
+                <div class="form-field"><label asp-for="Transaction.Counterparty">Partner</label><input asp-for="Transaction.Counterparty" placeholder="Dobavljač ili kupac" /></div>
+                <div class="form-field"><label asp-for="Transaction.Description">Opis</label><input asp-for="Transaction.Description" placeholder="Kratki opis" /></div>
+                <div class="form-actions"><button class="btn btn-primary" type="submit">+ Evidentiraj</button></div>
+            </form>
+        </section>
+    </section>
+}
+
+<section class="panel table-panel"><div class="panel-head"><h2>Stanje po računima</h2><span>@Model.Accounts.Count računa</span></div>
+@if (Model.Accounts.Count == 0) { <div class="empty-row">Dodaj prvi financijski račun za početak evidencije.</div> }
+else { <div class="table-wrap"><table><thead><tr><th>Račun</th><th>Vrsta</th><th>Valuta</th><th>Stanje</th></tr></thead><tbody>@foreach (var item in Model.Accounts) { <tr><td><strong>@item.Name</strong></td><td>@item.Type</td><td>@item.Currency</td><td>@item.CurrentBalance.ToString("N2") €</td></tr> }</tbody></table></div> }
+</section>
+
+<section class="panel timeline-panel"><div class="panel-head"><h2>Zadnje transakcije</h2><span>@Model.Transactions.Count zapisa</span></div>
+@if (Model.Transactions.Count == 0) { <div class="empty-row">Nema evidentiranih prihoda ni troškova.</div> }
+else { <div class="table-wrap"><table><thead><tr><th>Datum</th><th>Vrsta</th><th>Račun</th><th>Partner</th><th>Opis</th><th>Iznos</th></tr></thead><tbody>@foreach (var item in Model.Transactions) { <tr><td>@item.OccurredOn.ToString("dd.MM.yyyy.")</td><td><span class="tag">@item.Type</span></td><td>@item.AccountName</td><td>@(item.Counterparty ?? "—")</td><td>@(item.Description ?? "—")</td><td>@(item.Type == FinancialTransactionType.Expense ? "−" : "+")@item.Amount.ToString("N2") €</td></tr> }</tbody></table></div> }
+</section>
