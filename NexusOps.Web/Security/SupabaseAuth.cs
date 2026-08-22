@@ -54,7 +54,16 @@ public sealed class SupabaseSignInService(HttpClient httpClient, IOptions<Supaba
         };
         request.Headers.Add("apikey", settings.PublishableKey);
         using var response = await httpClient.SendAsync(request, cancellationToken);
-        if (!response.IsSuccessStatusCode) return new(false, "E-mail ili lozinka nisu ispravni.");
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync(cancellationToken);
+            var message = error.Contains("Email not confirmed", StringComparison.OrdinalIgnoreCase)
+                ? "E-mail još nije potvrđen u Supabaseu. Potvrdi korisnika ili ponovno postavi lozinku."
+                : error.Contains("Invalid API key", StringComparison.OrdinalIgnoreCase)
+                    ? "Supabase publishable/anon ključ nije prihvaćen. Provjeri Railway varijablu."
+                    : "E-mail ili lozinka nisu ispravni.";
+            return new(false, message);
+        }
 
         using var document = JsonDocument.Parse(await response.Content.ReadAsStreamAsync(cancellationToken));
         var user = document.RootElement.GetProperty("user");
