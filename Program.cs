@@ -77,6 +77,10 @@ if (!string.IsNullOrWhiteSpace(connectionString) && Guid.TryParse(tenantId, out 
         new NexusOps.Web.Services.PostgresOperationsStore(
             services.GetRequiredService<NpgsqlDataSource>(),
             parsedTenantId));
+    builder.Services.AddSingleton<NexusOps.Web.Services.IFinanceStore>(services =>
+        new NexusOps.Web.Services.PostgresFinanceStore(
+            services.GetRequiredService<NpgsqlDataSource>(),
+            parsedTenantId));
     builder.Services.AddSingleton<IUserRoleStore>(services =>
         new PostgresUserRoleStore(services.GetRequiredService<NpgsqlDataSource>(), parsedTenantId));
 }
@@ -84,6 +88,8 @@ else
 {
     builder.Services.AddSingleton<NexusOps.Web.Services.IOperationsStore,
         NexusOps.Web.Services.InMemoryOperationsStore>();
+    builder.Services.AddSingleton<NexusOps.Web.Services.IFinanceStore,
+        NexusOps.Web.Services.InMemoryFinanceStore>();
     builder.Services.AddSingleton<IUserRoleStore, UnconfiguredUserRoleStore>();
 }
 builder.Services.AddTransient<IVoiceProvider>(services => services.GetRequiredService<TwilioVoiceProvider>());
