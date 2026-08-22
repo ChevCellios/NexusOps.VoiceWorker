@@ -17,7 +17,7 @@ public sealed class CreateModel(IOperationsStore store) : PageModel
 
         try
         {
-            var order = store.CreateWorkOrder(Input);
+            var order = store.CreateWorkOrder(Input, User.Identity?.Name ?? "Sustav");
             TempData["Success"] = $"Radni nalog {order.Number} je otvoren.";
             return RedirectToPage("Details", new { id = order.Id });
         }

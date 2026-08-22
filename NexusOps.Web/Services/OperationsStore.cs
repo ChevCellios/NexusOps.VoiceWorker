@@ -13,7 +13,7 @@ public interface IOperationsStore
     IReadOnlyList<WorkOrderEvent> ListWorkOrderEvents(Guid workOrderId);
     void UpdateWorkOrderStatus(Guid id, WorkOrderStatus status, string? actorName);
     DashboardSummary GetSummary();
-    WorkOrder CreateWorkOrder(CreateWorkOrderInput input);
+    WorkOrder CreateWorkOrder(CreateWorkOrderInput input, string? actorName = null);
 }
 
 public sealed class InMemoryOperationsStore : IOperationsStore
@@ -70,13 +70,13 @@ public sealed class InMemoryOperationsStore : IOperationsStore
         _assets.Count(asset => asset.Status is not AssetStatus.Operational),
         _workOrders.Count(order => order.Status is WorkOrderStatus.Completed && order.CreatedAt.Month == DateTime.UtcNow.Month));
 
-    public WorkOrder CreateWorkOrder(CreateWorkOrderInput input)
+    public WorkOrder CreateWorkOrder(CreateWorkOrderInput input, string? actorName = null)
     {
         if (string.IsNullOrWhiteSpace(input.Title)) throw new ArgumentException("Naslov radnog naloga je obavezan.");
         if (!_assets.Any(asset => asset.Id == input.AssetId)) throw new ArgumentException("Odabrani stroj ne postoji.");
         var workOrder = new WorkOrder(Guid.NewGuid(), $"RN-{DateTime.UtcNow:yyyy}-{_workOrders.Count + 1:000}", input.Title.Trim(), input.AssetId, input.Priority, WorkOrderStatus.New, input.AssignedTo.Trim(), DateTimeOffset.UtcNow, input.DueAt, input.Description?.Trim());
         _workOrders.Add(workOrder);
-        _workOrderEvents.Add(new WorkOrderEvent(Guid.NewGuid(), workOrder.Id, "created", "Radni nalog je otvoren putem web aplikacije.", "Administrator", DateTimeOffset.UtcNow));
+        _workOrderEvents.Add(new WorkOrderEvent(Guid.NewGuid(), workOrder.Id, "created", "Radni nalog je otvoren putem web aplikacije.", actorName, DateTimeOffset.UtcNow));
         return workOrder;
     }
 }

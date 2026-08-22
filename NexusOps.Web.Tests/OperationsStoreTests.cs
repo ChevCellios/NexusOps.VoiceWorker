@@ -72,10 +72,10 @@ public sealed class OperationsStoreTests
             Title = "Preventivni pregled",
             AssetId = asset.Id,
             DueAt = dueAt
-        });
+        }, "tehnicar@nexusops.hr");
 
         Assert.Equal(dueAt, store.GetWorkOrder(order.Id)?.DueAt);
-        Assert.Contains(store.ListWorkOrderEvents(order.Id), item => item.EventType == "created");
+        Assert.Contains(store.ListWorkOrderEvents(order.Id), item => item.EventType == "created" && item.ActorName == "tehnicar@nexusops.hr");
     }
 
     [Fact]
