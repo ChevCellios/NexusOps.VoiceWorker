@@ -1,6 +1,83 @@
 @page
 @model NexusOps.Web.Pages.Inventory.IndexModel
-@{ViewData["Title"]="Skladište";var low=Model.Items.Where(x=>x.Available<=x.Minimum).ToArray();}
-<div class="page-head"><div><span class="eyebrow">Roba i materijal</span><h1>Skladište</h1><p>Stanje, rezervacije i minimalne količine po skladištu.</p></div></div>
-<section class="stat-grid"><article><span>Artikala</span><strong>@Model.Items.Count</strong><small>u aktivnom pregledu</small></article><article><span>Vrijednost zaliha</span><strong>@Model.Items.Sum(x=>x.Value).ToString("N2") €</strong><small>nabavna vrijednost</small></article><article><span>Za naručiti</span><strong>@low.Length</strong><small>ispod minimuma</small></article><article><span>Rezervirano</span><strong>@Model.Items.Sum(x=>x.Reserved).ToString("N0")</strong><small>za radne naloge</small></article></section>
-<section class="panel table-panel"><div class="panel-head"><h2>Stanje robe</h2><span>@(low.Length>0?"Potrebna nabava":"Zalihe su uredne")</span></div><div class="table-wrap"><table><thead><tr><th>Skladište</th><th>Šifra</th><th>Artikl</th><th>Dostupno</th><th>Minimum</th><th>Rezervirano</th><th>Vrijednost</th></tr></thead><tbody>@foreach(var x in Model.Items){<tr><td>@x.Warehouse</td><td>@x.Code</td><td><strong>@x.Name</strong></td><td><span class="tag">@x.Available @x.Unit</span></td><td>@x.Minimum @x.Unit</td><td>@x.Reserved @x.Unit</td><td>@x.Value.ToString("N2") €</td></tr>}</tbody></table></div></section>
+@{ ViewData["Title"] = "Skladište"; var low = Model.Items.Where(x => x.Available <= x.Minimum).ToArray(); }
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">Roba i materijal</span>
+        <h1>Skladište</h1>
+        <p>Stanje, rezervacije i minimalne količine po skladištu.</p>
+    </div>
+</div>
+
+@if (TempData["Success"] is string success)
+{
+    <p class="success-message">@success</p>
+}
+
+<section class="stat-grid">
+    <article><span>Artikala</span><strong>@Model.Items.Count</strong><small>u aktivnom pregledu</small></article>
+    <article><span>Vrijednost zaliha</span><strong>@Model.Items.Sum(x => x.Value).ToString("N2") €</strong><small>nabavna vrijednost</small></article>
+    <article><span>Za naručiti</span><strong>@low.Length</strong><small>ispod minimuma</small></article>
+    <article><span>Rezervirano</span><strong>@Model.Items.Sum(x => x.Reserved).ToString("N0")</strong><small>za radne naloge</small></article>
+</section>
+
+@if (User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("Technician"))
+{
+    <section class="panel form-panel">
+        <div class="panel-head"><h2>Evidentiraj promjenu zalihe</h2><span>Ulaz ili izlaz robe</span></div>
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+            <div class="form-grid">
+                <p class="form-wide">
+                    <label asp-for="Input.StockId">Artikl i skladište</label>
+                    <select asp-for="Input.StockId">
+                        <option value="">Odaberi artikl…</option>
+                        @foreach (var item in Model.Items)
+                        {
+                            <option value="@item.StockId">@item.Warehouse — @item.Code — @item.Name (@item.Available @item.Unit dostupno)</option>
+                        }
+                    </select>
+                    <span asp-validation-for="Input.StockId" class="field-validation"></span>
+                </p>
+                <p>
+                    <label asp-for="Input.MovementType">Vrsta promjene</label>
+                    <select asp-for="Input.MovementType">
+                        <option value="receipt">Ulaz robe</option>
+                        <option value="issue">Izlaz robe</option>
+                    </select>
+                </p>
+                <p>
+                    <label asp-for="Input.Quantity">Količina</label>
+                    <input asp-for="Input.Quantity" type="number" min="0.001" step="0.001" />
+                    <span asp-validation-for="Input.Quantity" class="field-validation"></span>
+                </p>
+                <p class="form-wide">
+                    <label asp-for="Input.Note">Napomena</label>
+                    <input asp-for="Input.Note" placeholder="Npr. primka dobavljača ili izdano za radni nalog" />
+                </p>
+            </div>
+            <div class="actions"><button class="btn btn-primary" type="submit">Spremi promjenu</button></div>
+        </form>
+    </section>
+}
+
+<section class="panel table-panel">
+    <div class="panel-head"><h2>Stanje robe</h2><span>@(low.Length > 0 ? "Potrebna nabava" : "Zalihe su uredne")</span></div>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Skladište</th><th>Šifra</th><th>Artikl</th><th>Dostupno</th><th>Minimum</th><th>Rezervirano</th><th>Vrijednost</th></tr></thead>
+            <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr>
+                    <td>@item.Warehouse</td><td>@item.Code</td><td><strong>@item.Name</strong></td>
+                    <td><span class="tag">@item.Available @item.Unit</span></td><td>@item.Minimum @item.Unit</td><td>@item.Reserved @item.Unit</td><td>@item.Value.ToString("N2") €</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }
