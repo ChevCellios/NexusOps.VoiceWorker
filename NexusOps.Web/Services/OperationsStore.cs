@@ -73,7 +73,7 @@ public sealed class InMemoryOperationsStore : IOperationsStore
     public WorkOrder CreateWorkOrder(CreateWorkOrderInput input, string? actorName = null)
     {
         if (string.IsNullOrWhiteSpace(input.Title)) throw new ArgumentException("Naslov radnog naloga je obavezan.");
-        if (!_assets.Any(asset => asset.Id == input.AssetId)) throw new ArgumentException("Odabrani stroj ne postoji.");
+        if (input.AssetId != Guid.Empty && !_assets.Any(asset => asset.Id == input.AssetId)) throw new ArgumentException("Odabrani stroj ne postoji.");
         var workOrder = new WorkOrder(Guid.NewGuid(), $"RN-{DateTime.UtcNow:yyyy}-{_workOrders.Count + 1:000}", input.Title.Trim(), input.AssetId, input.Priority, WorkOrderStatus.New, input.AssignedTo.Trim(), DateTimeOffset.UtcNow, input.DueAt, input.Description?.Trim());
         _workOrders.Add(workOrder);
         _workOrderEvents.Add(new WorkOrderEvent(Guid.NewGuid(), workOrder.Id, "created", "Radni nalog je otvoren putem web aplikacije.", actorName, DateTimeOffset.UtcNow));
