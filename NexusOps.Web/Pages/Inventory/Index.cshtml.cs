@@ -1,0 +1,1 @@
+using Microsoft.AspNetCore.Mvc.RazorPages;using NexusOps.Web.Models;using NexusOps.Web.Services;namespace NexusOps.Web.Pages.Inventory;public sealed class IndexModel(IInventoryStore store):PageModel{public IReadOnlyList<InventoryStockItem> Items{get;private set;}=[];public void OnGet()=>Items=store.ListStock();}

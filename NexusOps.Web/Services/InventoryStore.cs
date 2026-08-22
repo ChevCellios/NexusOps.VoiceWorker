@@ -1,0 +1,5 @@
+using NexusOps.Web.Models; using Npgsql;
+namespace NexusOps.Web.Services;
+public interface IInventoryStore{IReadOnlyList<InventoryStockItem> ListStock();}
+public sealed class PostgresInventoryStore(NpgsqlDataSource ds,Guid tenant):IInventoryStore{public IReadOnlyList<InventoryStockItem> ListStock(){const string sql="select w.name,i.item_code,i.name,i.unit_of_measure,s.quantity,s.reserved_quantity,i.minimum_quantity,i.unit_cost from inventory_stock s join warehouses w on w.id=s.warehouse_id join inventory_items i on i.id=s.item_id where s.tenant_id=$1 order by w.name,i.name";using var c=ds.CreateCommand(sql);c.Parameters.AddWithValue(tenant);using var r=c.ExecuteReader();var items=new List<InventoryStockItem>();while(r.Read())items.Add(new(r.GetString(0),r.GetString(1),r.GetString(2),r.GetString(3),r.GetDecimal(4),r.GetDecimal(5),r.GetDecimal(6),r.GetDecimal(7)));return items;}}
+public sealed class InMemoryInventoryStore:IInventoryStore{public IReadOnlyList<InventoryStockItem> ListStock()=>[new("Centralno skladište","INV-001","Industrijski filter F-400","kom",36,4,12,18.5m),new("Tehničko skladište","INV-005","Propeler set za dron","set",4,2,6,42m)];}
