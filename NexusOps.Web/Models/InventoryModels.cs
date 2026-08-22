@@ -31,8 +31,15 @@ public sealed class InventoryMovementInput
     [Range(typeof(decimal), "0.001", "999999999", ErrorMessage = "Količina mora biti veća od nule.")]
     public decimal Quantity { get; set; }
 
+    public Guid? WorkOrderId { get; set; }
+
     [StringLength(500)]
     public string? Note { get; set; }
+}
+
+public sealed record WorkOrderMaterialUsage(string Code, string Name, string Unit, decimal Quantity, decimal UnitCost)
+{
+    public decimal Cost => Quantity * UnitCost;
 }
 
 public sealed class InventoryTransferInput

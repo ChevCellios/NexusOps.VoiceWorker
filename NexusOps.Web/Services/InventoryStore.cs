@@ -7,6 +7,7 @@ public interface IInventoryStore
 {
     IReadOnlyList<InventoryStockItem> ListStock();
     IReadOnlyList<InventoryWarehouse> ListWarehouses();
+    IReadOnlyList<WorkOrderMaterialUsage> ListWorkOrderMaterialUsage(Guid workOrderId);
     void RecordMovement(InventoryMovementInput input, string? actor);
     void Transfer(InventoryTransferInput input, string? actor);
 }
@@ -35,6 +36,15 @@ public sealed class PostgresInventoryStore(NpgsqlDataSource dataSource, Guid ten
         return warehouses;
     }
 
+    public IReadOnlyList<WorkOrderMaterialUsage> ListWorkOrderMaterialUsage(Guid workOrderId)
+    {
+        const string sql = "select i.item_code,i.name,i.unit_of_measure,sum(m.quantity),i.unit_cost from inventory_movements m join inventory_items i on i.id=m.item_id where m.tenant_id=$1 and m.work_order_id=$2 and m.movement_type='issue' group by i.item_code,i.name,i.unit_of_measure,i.unit_cost order by i.name";
+        using var command = dataSource.CreateCommand(sql); command.Parameters.AddWithValue(tenantId); command.Parameters.AddWithValue(workOrderId);
+        using var reader = command.ExecuteReader(); var usage = new List<WorkOrderMaterialUsage>();
+        while (reader.Read()) usage.Add(new(reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetDecimal(3), reader.GetDecimal(4)));
+        return usage;
+    }
+
     public void RecordMovement(InventoryMovementInput input, string? actor)
     {
         if (input.MovementType is not ("receipt" or "issue"))
@@ -42,6 +52,13 @@ public sealed class PostgresInventoryStore(NpgsqlDataSource dataSource, Guid ten
 
         using var connection = dataSource.OpenConnection();
         using var transaction = connection.BeginTransaction();
+        if (input.WorkOrderId is not null && input.MovementType != "issue") throw new ArgumentException("Radni nalog se može povezati samo s izlazom robe.");
+        if (input.WorkOrderId is not null)
+        {
+            using var workOrderCheck = new NpgsqlCommand("select 1 from work_orders where id=$1 and tenant_id=$2", connection, transaction);
+            workOrderCheck.Parameters.AddWithValue(input.WorkOrderId.Value); workOrderCheck.Parameters.AddWithValue(tenantId);
+            if (workOrderCheck.ExecuteScalar() is null) throw new ArgumentException("Radni nalog nije pronađen.");
+        }
         Guid warehouseId;
         Guid itemId;
         decimal currentQuantity;
@@ -62,11 +79,12 @@ public sealed class PostgresInventoryStore(NpgsqlDataSource dataSource, Guid ten
         var change = input.MovementType == "receipt" ? input.Quantity : -input.Quantity;
         if (currentQuantity + change < reservedQuantity) throw new ArgumentException("Nema dovoljno slobodne robe za evidentiranje izlaza.");
 
-        using (var movementCommand = new NpgsqlCommand("insert into inventory_movements (tenant_id,warehouse_id,item_id,movement_type,quantity,note,created_by_name) values ($1,$2,$3,$4,$5,$6,$7)", connection, transaction))
+        using (var movementCommand = new NpgsqlCommand("insert into inventory_movements (tenant_id,warehouse_id,item_id,work_order_id,movement_type,quantity,note,created_by_name) values ($1,$2,$3,$4,$5,$6,$7,$8)", connection, transaction))
         {
             movementCommand.Parameters.AddWithValue(tenantId);
             movementCommand.Parameters.AddWithValue(warehouseId);
             movementCommand.Parameters.AddWithValue(itemId);
+            movementCommand.Parameters.AddWithValue((object?)input.WorkOrderId ?? DBNull.Value);
             movementCommand.Parameters.AddWithValue(input.MovementType);
             movementCommand.Parameters.AddWithValue(input.Quantity);
             movementCommand.Parameters.AddWithValue((object?)input.Note?.Trim() ?? DBNull.Value);
@@ -120,10 +138,12 @@ public sealed class InMemoryInventoryStore : IInventoryStore
 {
     private readonly List<InventoryWarehouse> warehouses = [new(Guid.NewGuid(), "Centralno skladište"), new(Guid.NewGuid(), "Tehničko skladište")];
     private readonly List<InventoryStockItem> items;
+    private readonly List<(Guid WorkOrderId, WorkOrderMaterialUsage Usage)> workOrderUsage = [];
     public InMemoryInventoryStore() => items = [new(Guid.NewGuid(), warehouses[0].Id, warehouses[0].Name, "INV-001", "Industrijski filter F-400", "kom", 36, 4, 12, 18.5m), new(Guid.NewGuid(), warehouses[1].Id, warehouses[1].Name, "INV-005", "Propeler set za dron", "set", 4, 2, 6, 42m)];
 
     public IReadOnlyList<InventoryStockItem> ListStock() => items;
     public IReadOnlyList<InventoryWarehouse> ListWarehouses() => warehouses;
+    public IReadOnlyList<WorkOrderMaterialUsage> ListWorkOrderMaterialUsage(Guid workOrderId) => workOrderUsage.Where(x => x.WorkOrderId == workOrderId).Select(x => x.Usage).ToArray();
 
     public void RecordMovement(InventoryMovementInput input, string? actor)
     {
@@ -132,6 +152,7 @@ public sealed class InMemoryInventoryStore : IInventoryStore
         var change = input.MovementType == "receipt" ? input.Quantity : -input.Quantity;
         if (current.Quantity + change < current.Reserved) throw new ArgumentException("Nema dovoljno slobodne robe za evidentiranje izlaza.");
         items[items.IndexOf(current)] = current with { Quantity = current.Quantity + change };
+        if (input.MovementType == "issue" && input.WorkOrderId is not null) workOrderUsage.Add((input.WorkOrderId.Value, new(current.Code, current.Name, current.Unit, input.Quantity, current.UnitCost)));
     }
 
     public void Transfer(InventoryTransferInput input, string? actor)

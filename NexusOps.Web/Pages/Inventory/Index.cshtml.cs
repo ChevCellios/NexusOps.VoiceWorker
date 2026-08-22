@@ -5,12 +5,13 @@ using NexusOps.Web.Services;
 
 namespace NexusOps.Web.Pages.Inventory;
 
-public sealed class IndexModel(IInventoryStore store) : PageModel
+public sealed class IndexModel(IInventoryStore store, IOperationsStore operationsStore) : PageModel
 {
     [BindProperty] public InventoryMovementInput Input { get; set; } = new();
     [BindProperty] public InventoryTransferInput TransferInput { get; set; } = new();
     public IReadOnlyList<InventoryStockItem> Items { get; private set; } = [];
     public IReadOnlyList<InventoryWarehouse> Warehouses { get; private set; } = [];
+    public IReadOnlyList<WorkOrder> WorkOrders { get; private set; } = [];
 
     public void OnGet() => LoadData();
 
@@ -55,5 +56,6 @@ public sealed class IndexModel(IInventoryStore store) : PageModel
     {
         Items = store.ListStock();
         Warehouses = store.ListWarehouses();
+        WorkOrders = operationsStore.ListWorkOrders().Where(x => x.Status is not WorkOrderStatus.Completed).ToArray();
     }
 }

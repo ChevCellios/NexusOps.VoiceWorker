@@ -39,6 +39,18 @@
     </section>
 </div>
 
+<section class="panel table-panel">
+    <div class="panel-head"><h2>Utrošeni materijal</h2><span>@Model.Materials.Sum(x => x.Cost).ToString("N2") €</span></div>
+    @if (Model.Materials.Count == 0)
+    {
+        <div class="empty-row">Još nema izdanog materijala povezanog s ovim nalogom.</div>
+    }
+    else
+    {
+        <div class="table-wrap"><table><thead><tr><th>Šifra</th><th>Artikl</th><th>Količina</th><th>Jedinični trošak</th><th>Ukupno</th></tr></thead><tbody>@foreach (var item in Model.Materials) { <tr><td>@item.Code</td><td><strong>@item.Name</strong></td><td>@item.Quantity @item.Unit</td><td>@item.UnitCost.ToString("N2") €</td><td>@item.Cost.ToString("N2") €</td></tr> }</tbody></table></div>
+    }
+</section>
+
 <section class="panel timeline-panel">
     <div class="panel-head"><h2>Aktivnost naloga</h2><span>@Model.Events.Count zapisa</span></div>
     @if (Model.Events.Count == 0)
