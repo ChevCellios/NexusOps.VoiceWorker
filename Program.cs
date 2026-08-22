@@ -10,6 +10,8 @@ using NexusOps.VoiceWorker.WebSockets;
 using NexusOps.VoiceWorker.Workers;
 using Npgsql;
 using NexusOps.VoiceWorker.Diagnostics;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using NexusOps.Web.Security;
 
 var requestedEnvironment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
     ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
@@ -42,6 +44,17 @@ builder.Services.AddHttpClient<TwilioVoiceProvider>();
 builder.Services.AddHttpClient<BrowserRealtimeSessionService>();
 builder.Services.AddOptions<BrowserRealtimeTestOptions>().BindConfiguration(BrowserRealtimeTestOptions.SectionName);
 builder.Services.AddOptions<AdminOptions>().BindConfiguration(AdminOptions.SectionName);
+builder.Services.AddOptions<SupabaseAuthOptions>().BindConfiguration(SupabaseAuthOptions.SectionName);
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.AccessDeniedPath = "/Account/Login";
+        options.Cookie.Name = "NexusOps.Auth";
+        options.SlidingExpiration = true;
+    });
+builder.Services.AddAuthorization();
+builder.Services.AddHttpClient<SupabaseSignInService>();
 var persistenceProvider = builder.Configuration["Persistence:Provider"];
 var connectionString = builder.Configuration.GetConnectionString("NexusOps");
 var tenantId = builder.Configuration["NexusOps:TenantId"];
@@ -64,11 +77,14 @@ if (!string.IsNullOrWhiteSpace(connectionString) && Guid.TryParse(tenantId, out 
         new NexusOps.Web.Services.PostgresOperationsStore(
             services.GetRequiredService<NpgsqlDataSource>(),
             parsedTenantId));
+    builder.Services.AddSingleton<IUserRoleStore>(services =>
+        new PostgresUserRoleStore(services.GetRequiredService<NpgsqlDataSource>(), parsedTenantId));
 }
 else
 {
     builder.Services.AddSingleton<NexusOps.Web.Services.IOperationsStore,
         NexusOps.Web.Services.InMemoryOperationsStore>();
+    builder.Services.AddSingleton<IUserRoleStore, UnconfiguredUserRoleStore>();
 }
 builder.Services.AddTransient<IVoiceProvider>(services => services.GetRequiredService<TwilioVoiceProvider>());
 builder.Services.AddSingleton<IRealtimeClient, OpenAIRealtimeClient>();
@@ -83,6 +99,36 @@ var app = builder.Build();
 app.UseExceptionHandler();
 app.UseWebSockets();
 app.UseStaticFiles();
+app.UseAuthentication();
+app.UseAuthorization();
+var supabaseAuth = app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<SupabaseAuthOptions>>().Value;
+if (supabaseAuth.Enabled && supabaseAuth.RequireAuthenticatedUsers)
+{
+    app.Use(async (context, next) =>
+    {
+        var isAccountRoute = context.Request.Path.StartsWithSegments("/Account");
+        var isRazorPageRequest = !Path.HasExtension(context.Request.Path) &&
+                                 !context.Request.Path.StartsWithSegments("/voice") &&
+                                 !context.Request.Path.StartsWithSegments("/health") &&
+                                 !context.Request.Path.StartsWithSegments("/status") &&
+                                 !context.Request.Path.StartsWithSegments("/command-center");
+        if (isRazorPageRequest && !isAccountRoute && context.User.Identity?.IsAuthenticated != true)
+        {
+            var returnUrl = Uri.EscapeDataString($"{context.Request.PathBase}{context.Request.Path}{context.Request.QueryString}");
+            context.Response.Redirect($"/Account/Login?ReturnUrl={returnUrl}");
+            return;
+        }
+
+        var isViewer = context.User.IsInRole(NexusOpsRole.Viewer.ToString());
+        if (isRazorPageRequest && !isAccountRoute && HttpMethods.IsPost(context.Request.Method) && isViewer)
+        {
+            context.Response.Redirect("/Account/AccessDenied");
+            return;
+        }
+
+        await next();
+    });
+}
 app.MapControllers();
 app.MapStaticAssets();
 app.MapRazorPages()

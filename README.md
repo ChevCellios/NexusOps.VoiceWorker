@@ -24,6 +24,24 @@ The same Railway service also hosts the NexusOps operations interface:
 
 The web interface and voice endpoints deliberately share one deployment, domain and PostgreSQL configuration. Application data is separated by the configured `NexusOps:TenantId`.
 
+### Supabase Auth and roles
+
+NexusOps supports email/password sign-in through Supabase Auth. Authentication is deliberately off by default, so adding the feature never locks an existing deployment. To activate it:
+
+1. Run [`NexusOps.Web/Database/002_user_access.sql`](NexusOps.Web/Database/002_user_access.sql) in the Supabase SQL Editor.
+2. Create the first user in **Supabase Dashboard → Authentication → Users** and copy that user's UUID.
+3. Insert a role mapping using the example at the bottom of the SQL file. The first user should normally be `Administrator`.
+4. Add these Railway variables:
+
+```text
+SupabaseAuth__Enabled=true
+SupabaseAuth__RequireAuthenticatedUsers=true
+SupabaseAuth__Url=https://YOUR_PROJECT.supabase.co
+SupabaseAuth__PublishableKey=YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY
+```
+
+`PublishableKey` is intended for client-side identification and is not a service-role key. Never add a Supabase `service_role` key to Railway or source control. Once enabled, users without a `nexusops_user_roles` row cannot sign in. `Viewer` users can inspect data but cannot submit changes; `Technician`, `Manager`, and `Administrator` can work with operational forms.
+
 ## Run
 
 ```powershell

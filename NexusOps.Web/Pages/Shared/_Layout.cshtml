@@ -59,7 +59,18 @@
         <main>
             <header>
                 <div class="header-nav"><button type="button" class="back-button" onclick="history.back()">← Natrag</button><a asp-page="/Index">Nadzorna ploča</a></div>
-                <div><span>Organizacija: <strong>Demo pogon</strong></span><span class="user">Administrator</span></div>
+                <div>
+                    <span>Organizacija: <strong>Demo pogon</strong></span>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <span class="user">@User.Identity.Name · @User.Claims.FirstOrDefault(claim => claim.Type == System.Security.Claims.ClaimTypes.Role)?.Value</span>
+                        <form method="post" asp-page="/Account/Logout" style="display:inline"><button class="back-button" type="submit">Odjava</button></form>
+                    }
+                    else
+                    {
+                        <a class="user" asp-page="/Account/Login">Prijava</a>
+                    }
+                </div>
             </header>
             <div class="content">@RenderBody()</div>
         </main>
