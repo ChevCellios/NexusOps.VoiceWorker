@@ -6,12 +6,15 @@ create table if not exists nexusops_user_roles (
     tenant_id uuid not null references tenants(id) on delete cascade,
     organization_id uuid references organizations(id) on delete set null,
     user_id uuid not null,
+    email varchar(320),
     role varchar(30) not null check (role in ('Viewer', 'Technician', 'Manager', 'Administrator')),
     is_active boolean not null default true,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
     unique (tenant_id, user_id)
 );
+
+alter table nexusops_user_roles add column if not exists email varchar(320);
 
 create index if not exists ix_nexusops_user_roles_user on nexusops_user_roles (user_id, is_active);
 
