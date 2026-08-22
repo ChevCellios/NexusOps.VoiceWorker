@@ -1,0 +1,3 @@
+using Microsoft.AspNetCore.Mvc; using Microsoft.AspNetCore.Mvc.RazorPages; using NexusOps.Web.Models; using NexusOps.Web.Services;
+namespace NexusOps.Web.Pages.Team;
+public sealed class IndexModel(ITeamStore store):PageModel { public IReadOnlyList<TeamMember> Members {get;private set;}=[]; public void OnGet()=>Members=store.ListToday(); public IActionResult OnPostUpdate(Guid employeeId,string status,string? location,string? task,bool doNotDisturb){if(!User.IsInRole("Administrator")&&!User.IsInRole("Manager"))return RedirectToPage("/Account/AccessDenied");store.UpdateStatus(employeeId,status,location,task,doNotDisturb,User.Identity?.Name);TempData["Success"]="Status zaposlenika je ažuriran.";return RedirectToPage();} }

@@ -24,6 +24,19 @@ The same Railway service also hosts the NexusOps operations interface:
 
 The web interface and voice endpoints deliberately share one deployment, domain and PostgreSQL configuration. Application data is separated by the configured `NexusOps:TenantId`.
 
+### Demo corporation and operations data
+
+The optional **Adria Dynamics d.o.o.** dataset adds three business units, employees, warehouses, inventory, fleet assets, finance records, a loan, public tenders, presence and time-work examples. Run the SQL scripts in this order in the Supabase SQL Editor:
+
+1. `001_operations_schema.sql`
+2. `002_user_access.sql`
+3. `003_finance_and_tenders.sql`
+4. `004_corporate_operations.sql`
+5. `006_finance_schema_compatibility.sql` when an older `loans` table already exists
+6. `005_adria_dynamics_demo_seed.sql`
+
+The seed script is repeatable. It never contains real people or financial data.
+
 ### Supabase Auth and roles
 
 NexusOps supports email/password sign-in through Supabase Auth. Authentication is deliberately off by default, so adding the feature never locks an existing deployment. To activate it:
