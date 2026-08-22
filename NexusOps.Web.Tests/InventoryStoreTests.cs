@@ -38,4 +38,18 @@ public sealed class InventoryStoreTests
         Assert.Equal(source.Quantity - 3, store.ListStock().Single(x => x.StockId == source.StockId).Quantity);
         Assert.Contains(store.ListStock(), x => x.WarehouseId == destination.Id && x.Code == source.Code && x.Quantity == 3);
     }
+
+    [Fact]
+    public void RecordIssue_WithWorkOrderTracksMaterialCost()
+    {
+        var store = new InMemoryInventoryStore();
+        var item = store.ListStock().First();
+        var workOrderId = Guid.NewGuid();
+
+        store.RecordMovement(new InventoryMovementInput { StockId = item.StockId, MovementType = "issue", Quantity = 2, WorkOrderId = workOrderId }, "tester");
+
+        var usage = Assert.Single(store.ListWorkOrderMaterialUsage(workOrderId));
+        Assert.Equal(item.Code, usage.Code);
+        Assert.Equal(2 * item.UnitCost, usage.Cost);
+    }
 }

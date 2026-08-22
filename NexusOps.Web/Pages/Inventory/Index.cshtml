@@ -52,6 +52,17 @@
                     <input asp-for="Input.Quantity" type="number" min="0.001" step="0.001" />
                     <span asp-validation-for="Input.Quantity" class="field-validation"></span>
                 </p>
+                <p>
+                    <label asp-for="Input.WorkOrderId">Radni nalog</label>
+                    <select asp-for="Input.WorkOrderId">
+                        <option value="">Nije povezano</option>
+                        @foreach (var order in Model.WorkOrders)
+                        {
+                            <option value="@order.Id">@order.Number — @order.Title</option>
+                        }
+                    </select>
+                    <small class="form-hint">Odaberi samo kod izlaza robe.</small>
+                </p>
                 <p class="form-wide">
                     <label asp-for="Input.Note">Napomena</label>
                     <input asp-for="Input.Note" placeholder="Npr. primka dobavljača ili izdano za radni nalog" />
