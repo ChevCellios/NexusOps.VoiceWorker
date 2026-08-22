@@ -8,13 +8,15 @@ namespace NexusOps.Web.Pages.Inventory;
 public sealed class IndexModel(IInventoryStore store) : PageModel
 {
     [BindProperty] public InventoryMovementInput Input { get; set; } = new();
+    [BindProperty] public InventoryTransferInput TransferInput { get; set; } = new();
     public IReadOnlyList<InventoryStockItem> Items { get; private set; } = [];
+    public IReadOnlyList<InventoryWarehouse> Warehouses { get; private set; } = [];
 
-    public void OnGet() => Items = store.ListStock();
+    public void OnGet() => LoadData();
 
     public IActionResult OnPost()
     {
-        Items = store.ListStock();
+        LoadData();
         if (!User.IsInRole("Administrator") && !User.IsInRole("Manager") && !User.IsInRole("Technician")) return Forbid();
         if (!ModelState.IsValid) return Page();
 
@@ -29,5 +31,29 @@ public sealed class IndexModel(IInventoryStore store) : PageModel
             ModelState.AddModelError(string.Empty, exception.Message);
             return Page();
         }
+    }
+
+    public IActionResult OnPostTransfer()
+    {
+        LoadData();
+        if (!User.IsInRole("Administrator") && !User.IsInRole("Manager") && !User.IsInRole("Technician")) return Forbid();
+        if (!ModelState.IsValid) return Page();
+        try
+        {
+            store.Transfer(TransferInput, User.Identity?.Name ?? "Sustav");
+            TempData["Success"] = "Prijenos robe je evidentiran.";
+            return RedirectToPage();
+        }
+        catch (ArgumentException exception)
+        {
+            ModelState.AddModelError(string.Empty, exception.Message);
+            return Page();
+        }
+    }
+
+    private void LoadData()
+    {
+        Items = store.ListStock();
+        Warehouses = store.ListWarehouses();
     }
 }

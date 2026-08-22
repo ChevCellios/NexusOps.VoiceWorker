@@ -60,6 +60,47 @@
             <div class="actions"><button class="btn btn-primary" type="submit">Spremi promjenu</button></div>
         </form>
     </section>
+
+    <section class="panel form-panel">
+        <div class="panel-head"><h2>Prijenos između skladišta</h2><span>Premještanje postojeće robe</span></div>
+        <form method="post" asp-page-handler="Transfer">
+            <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+            <div class="form-grid">
+                <p class="form-wide">
+                    <label asp-for="TransferInput.SourceStockId">Artikl iz izvornog skladišta</label>
+                    <select asp-for="TransferInput.SourceStockId">
+                        <option value="">Odaberi artikl…</option>
+                        @foreach (var item in Model.Items.Where(x => x.Available > 0))
+                        {
+                            <option value="@item.StockId">@item.Warehouse — @item.Code — @item.Name (@item.Available @item.Unit slobodno)</option>
+                        }
+                    </select>
+                    <span asp-validation-for="TransferInput.SourceStockId" class="field-validation"></span>
+                </p>
+                <p>
+                    <label asp-for="TransferInput.DestinationWarehouseId">Odredišno skladište</label>
+                    <select asp-for="TransferInput.DestinationWarehouseId">
+                        <option value="">Odaberi skladište…</option>
+                        @foreach (var warehouse in Model.Warehouses)
+                        {
+                            <option value="@warehouse.Id">@warehouse.Name</option>
+                        }
+                    </select>
+                    <span asp-validation-for="TransferInput.DestinationWarehouseId" class="field-validation"></span>
+                </p>
+                <p>
+                    <label asp-for="TransferInput.Quantity">Količina</label>
+                    <input asp-for="TransferInput.Quantity" type="number" min="0.001" step="0.001" />
+                    <span asp-validation-for="TransferInput.Quantity" class="field-validation"></span>
+                </p>
+                <p class="form-wide">
+                    <label asp-for="TransferInput.Note">Napomena</label>
+                    <input asp-for="TransferInput.Note" placeholder="Npr. prijenos za Pogon B" />
+                </p>
+            </div>
+            <div class="actions"><button class="btn secondary-btn" type="submit">Evidentiraj prijenos</button></div>
+        </form>
+    </section>
 }
 
 <section class="panel table-panel">

@@ -4,6 +4,7 @@ namespace NexusOps.Web.Models;
 
 public sealed record InventoryStockItem(
     Guid StockId,
+    Guid WarehouseId,
     string Warehouse,
     string Code,
     string Name,
@@ -17,6 +18,8 @@ public sealed record InventoryStockItem(
     public decimal Value => Quantity * UnitCost;
 }
 
+public sealed record InventoryWarehouse(Guid Id, string Name);
+
 public sealed class InventoryMovementInput
 {
     [Required(ErrorMessage = "Odaberi artikl u skladištu.")]
@@ -24,6 +27,21 @@ public sealed class InventoryMovementInput
 
     [Required(ErrorMessage = "Odaberi vrstu promjene.")]
     public string MovementType { get; set; } = "receipt";
+
+    [Range(typeof(decimal), "0.001", "999999999", ErrorMessage = "Količina mora biti veća od nule.")]
+    public decimal Quantity { get; set; }
+
+    [StringLength(500)]
+    public string? Note { get; set; }
+}
+
+public sealed class InventoryTransferInput
+{
+    [Required(ErrorMessage = "Odaberi artikl za prijenos.")]
+    public Guid SourceStockId { get; set; }
+
+    [Required(ErrorMessage = "Odaberi odredišno skladište.")]
+    public Guid DestinationWarehouseId { get; set; }
 
     [Range(typeof(decimal), "0.001", "999999999", ErrorMessage = "Količina mora biti veća od nule.")]
     public decimal Quantity { get; set; }
