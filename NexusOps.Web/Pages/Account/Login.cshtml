@@ -1,0 +1,6 @@
+@page
+@model NexusOps.Web.Pages.Account.LoginModel
+@{ ViewData["Title"] = "Prijava"; }
+
+<div class="page-head"><div><span class="eyebrow">NexusOps identitet</span><h1>Prijava</h1><p>Prijavi se svojim poslovnim računom.</p></div></div>
+<section class="panel form-panel login-panel"><form method="post"><div asp-validation-summary="ModelOnly" class="validation-summary"></div><p><label asp-for="Email">E-mail</label><input asp-for="Email" type="email" autocomplete="email" autofocus /></p><p><label asp-for="Password">Lozinka</label><input asp-for="Password" type="password" autocomplete="current-password" /></p><input type="hidden" asp-for="ReturnUrl" /><button class="btn btn-primary" type="submit">Prijavi se</button></form></section>
