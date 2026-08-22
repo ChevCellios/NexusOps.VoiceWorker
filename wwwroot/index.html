@@ -8,7 +8,7 @@
     :root { --bg:#09101f; --panel:#121c31; --line:#293957; --text:#eef3ff; --muted:#9aa9c6; --blue:#7894ff; --mint:#57dab8; --danger:#ffb4c2; }
     * { box-sizing:border-box; } body { margin:0; background:radial-gradient(800px 450px at 95% -10%,#23396a 0,transparent 65%),var(--bg); color:var(--text); font:15px/1.45 system-ui,sans-serif; }
     .app { min-height:100vh; display:grid; grid-template-columns:250px 1fr; } .side { padding:26px 17px; border-right:1px solid var(--line); background:#0a1122; }
-    .brand { font-size:20px; font-weight:800; letter-spacing:-.5px; padding:0 10px 30px; } .brand b { display:inline-grid; place-items:center; width:31px; height:31px; margin-right:10px; border-radius:10px; background:linear-gradient(140deg,var(--blue),#b178ff); }
+    .brand { display:block; color:var(--text); text-decoration:none; font-size:20px; font-weight:800; letter-spacing:-.5px; padding:0 10px 30px; } .brand b { display:inline-grid; place-items:center; width:31px; height:31px; margin-right:10px; border-radius:10px; background:linear-gradient(140deg,var(--blue),#b178ff); }
     .nav { display:grid; gap:5px; } .nav a { padding:11px 12px; border-radius:9px; color:var(--muted); text-decoration:none; } .nav a.active { color:var(--text); background:#202e4e; }
     .main { width:100%; max-width:1500px; margin:auto; padding:28px clamp(18px,4vw,60px); }.top { display:flex; align-items:center; justify-content:space-between; gap:15px; margin-bottom:28px; }.eyebrow { font-size:12px; color:var(--blue); font-weight:800; text-transform:uppercase; letter-spacing:1px; }.top h1 { font-size:28px; margin:3px 0; }
     .controls,.filters { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }.live { color:var(--mint); font-size:13px; }.dot { display:inline-block; width:8px; height:8px; margin-right:6px; border-radius:50%; background:var(--mint); box-shadow:0 0 12px var(--mint); }
@@ -24,7 +24,7 @@
 </head>
 <body>
 <div class="app">
-  <aside class="side"><div class="brand"><b>N</b>NexusOps</div><nav class="nav"><a class="active" href="#">◈ Command Center</a><a href="#calls">☎ Pozivi</a><a href="#">◉ Agenti</a><a href="#">✓ Zadaci</a><a href="#">▣ Strojevi</a><a href="#">⚙ Postavke</a></nav></aside>
+  <aside class="side"><a class="brand" href="/" title="Povratak u NexusOps"><b>N</b>NexusOps</a><nav class="nav"><a href="/">← NexusOps aplikacija</a><a class="active" href="#">◈ Command Center</a><a href="#calls">☎ Pozivi</a><a href="#">◉ Agenti</a><a href="#">✓ Zadaci</a><a href="#">▣ Strojevi</a><a href="#">⚙ Postavke</a></nav></aside>
   <main class="main">
     <header class="top"><div><div class="eyebrow">Operativni pregled</div><h1>Command Center</h1></div><div class="controls"><span class="live" id="auth-state"><i class="dot"></i>Servis online</span><div class="key-wrap" id="key-wrap"><input class="key" id="key" type="password" placeholder="Admin pristupni ključ"><button class="show-key" id="show-key" type="button" aria-label="Prikaži pristupni ključ" title="Prikaži ključ">👁</button></div><button id="load">Učitaj podatke</button><button class="secondary hidden" id="sign-out">Odjava</button></div></header>
     <div class="notice" id="notice"></div>

@@ -1,0 +1,60 @@
+@page
+@model NexusOps.Web.Pages.Users.IndexModel
+@using NexusOps.Web.Security
+@{ ViewData["Title"] = "Korisnici"; }
+
+<div class="page-head">
+    <div><span class="eyebrow">Pristup aplikaciji</span><h1>Korisnici</h1><p>Stvori korisnika i odmah mu dodijeli NexusOps ulogu.</p></div>
+</div>
+
+@if (TempData["Success"] is string success)
+{
+    <div class="notice success">✓ @success</div>
+}
+@if (TempData["Error"] is string error)
+{
+    <div class="notice validation">@error</div>
+}
+
+<section class="panel form-panel">
+    <div class="section-heading"><div><span class="eyebrow">Novi račun</span><h2>Dodaj korisnika</h2></div></div>
+    <form method="post" class="form-grid">
+        <div class="form-field"><label asp-for="Email">E-mail</label><input asp-for="Email" autocomplete="email" placeholder="ime@tvrtka.hr" /><span asp-validation-for="Email" class="validation"></span></div>
+        <div class="form-field"><label asp-for="Password">Početna lozinka</label><input asp-for="Password" type="password" autocomplete="new-password" placeholder="Najmanje 8 znakova" /><span asp-validation-for="Password" class="validation"></span></div>
+        <div class="form-field"><label asp-for="Role">Uloga</label><select asp-for="Role">@foreach (var role in Model.AssignableRoles) { <option value="@role">@role</option> }</select></div>
+        <div class="form-actions"><button class="btn btn-primary" type="submit">+ Stvori korisnika</button></div>
+        <div asp-validation-summary="ModelOnly" class="validation"></div>
+    </form>
+    <p class="form-hint">Ako je u Supabaseu uključena potvrda e-maila, novi korisnik mora potvrditi poruku prije prve prijave.</p>
+</section>
+
+<section class="panel table-panel">
+    <div class="section-heading"><div><span class="eyebrow">Organizacija</span><h2>Aktivni pristupi</h2></div><span class="tag">@Model.Users.Count korisnika</span></div>
+    @if (Model.Users.Count == 0)
+    {
+        <div class="empty">Još nema dodijeljenih korisničkih uloga.</div>
+    }
+    else
+    {
+        <div class="table-wrap"><table><thead><tr><th>Korisnik</th><th>Uloga</th><th>Status</th><th>ID računa</th><th>Upravljanje</th></tr></thead><tbody>
+        @foreach (var user in Model.Users)
+        {
+            <tr>
+                <td>@(user.Email ?? "E-mail nije upisan")</td><td><span class="tag">@user.Role</span></td><td><span class="status status-completed">@(user.IsActive ? "Aktivan" : "Isključen")</span></td><td><code>@user.UserId</code></td>
+                <td>
+                    @if (Model.AssignableRoles.Contains(user.Role) && user.UserId.ToString() != User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value)
+                    {
+                        <form method="post" asp-page-handler="Update" class="user-access-form">
+                            <input type="hidden" name="userId" value="@user.UserId" />
+                            <select name="role" aria-label="Uloga za @user.Email">@foreach (var role in Model.AssignableRoles) { <option value="@role" selected="@(role == user.Role)">@role</option> }</select>
+                            <input type="hidden" name="isActive" value="@(user.IsActive ? "false" : "true")" />
+                            <button class="btn secondary-btn" type="submit">@(user.IsActive ? "Isključi" : "Uključi")</button>
+                        </form>
+                    }
+                    else { <span class="muted">Zaštićeno</span> }
+                </td>
+            </tr>
+        }
+        </tbody></table></div>
+    }
+</section>
