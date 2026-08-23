@@ -5,6 +5,14 @@
 <div class="page-head"><div><span class="eyebrow">NexusOps identitet</span><h1>Prijava</h1><p>Prijavi se svojim poslovnim računom.</p></div></div>
 <section class="panel form-panel login-panel"><form method="post"><div asp-validation-summary="ModelOnly" class="validation-summary"></div><p><label asp-for="Email">E-mail</label><input asp-for="Email" type="email" autocomplete="email" autofocus /></p><p><label asp-for="Password">Lozinka</label><span class="password-field"><input asp-for="Password" type="password" autocomplete="current-password" /><button class="password-toggle" type="button" aria-label="Prikaži lozinku" title="Prikaži lozinku">👁</button></span></p><input type="hidden" asp-for="ReturnUrl" /><button class="btn btn-primary" type="submit">Prijavi se</button></form></section>
 
+<section class="panel form-panel" style="margin-top:18px">
+    <span class="eyebrow">Javni demo</span>
+    <h2 style="margin-top:8px">Isprobaj NexusOps bez pristupa podacima</h2>
+    <p>Demo može samo simulirati jedan Twilio poziv za fiktivni radni nalog. Ne vidi poslovne podatke i ne pokreće stvarne pozive.</p>
+    <p class="form-hint"><strong>E-mail:</strong> demo@nexusops.app<br /><strong>Lozinka:</strong> NexusOps!Demo26</p>
+    <button id="fill-demo-account" class="btn secondary-btn" type="button">Upiši demo podatke</button>
+</section>
+
 @section Scripts {
     <script>
         document.querySelector('.password-toggle')?.addEventListener('click', function () {
@@ -13,6 +21,11 @@
             input.type = visible ? 'password' : 'text';
             this.textContent = visible ? '👁' : '◉';
             this.setAttribute('aria-label', visible ? 'Prikaži lozinku' : 'Sakrij lozinku');
+        });
+        document.getElementById('fill-demo-account')?.addEventListener('click', function () {
+            document.getElementById('@Html.IdFor(model => model.Email)').value = 'demo@nexusops.app';
+            document.getElementById('@Html.IdFor(model => model.Password)').value = 'NexusOps!Demo26';
+            document.getElementById('@Html.IdFor(model => model.Email)').focus();
         });
     </script>
 }
