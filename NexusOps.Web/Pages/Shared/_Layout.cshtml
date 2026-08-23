@@ -54,8 +54,12 @@
                 }
                 else
                 {
-                <a asp-page="/Index">◈ Nadzorna ploča</a>
-                <a asp-page="/WorkOrders/Index">✓ Radni nalozi</a>
+                    <a asp-page="/Index">◈ Nadzorna ploča</a>
+                    @if (User.IsInRole("Technician"))
+                    {
+                        <a asp-page="/MyWork/Index">◉ Moji radni nalozi</a>
+                    }
+                    <a asp-page="/WorkOrders/Index">✓ Radni nalozi</a>
                 <a asp-page="/Orders/Index">▣ Narudžbe</a>
                 <a asp-page="/Notifications/Index">✉ Obavijesti</a>
                 <a asp-page="/Assets/Index">▣ Strojevi</a>

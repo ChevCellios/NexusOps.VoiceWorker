@@ -40,6 +40,7 @@ The optional **Adria Dynamics d.o.o.** dataset adds three business units, employ
 8. `008_work_order_labor.sql`
 9. `009_rls_baseline.sql`
 10. `010_public_demo_access.sql` if you want to enable the restricted public demo user
+11. `011_employee_auth_link.sql` for each existing employee who should use **Moji radni nalozi**
 
 The seed script is repeatable. It never contains real people or financial data.
 
@@ -84,6 +85,10 @@ Password: NexusOps!Demo26
 ```
 
 To enable it, run `NexusOps.Web/Database/010_public_demo_access.sql`, create that confirmed user under **Supabase Dashboard → Authentication → Users**, then run the final mapping query from the same SQL file after replacing `YOUR_TENANT_UUID`. This public password is intentionally documented and must never be reused for an administrator account. It is not a Railway variable.
+
+### Technician work view
+
+`Moji radni nalozi` is available to a `Technician` account. It shows only work orders assigned to that employee and enables personal start/end work tracking. For an existing employee, run `NexusOps.Web/Database/011_employee_auth_link.sql` after replacing its tenant UUID and e-mail. The script links `employees.auth_user_id` to the matching Supabase Auth user. New users created through **Korisnici** are linked automatically when their e-mail already exists in `employees`.
 
 ## Run
 
