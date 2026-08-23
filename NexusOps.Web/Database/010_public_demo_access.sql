@@ -1,6 +1,9 @@
 -- NexusOps public demo access v0.1
 -- Run after 002_user_access.sql. It adds a restricted Demo role.
 
+-- Compatibility with early installations of 002_user_access.sql.
+alter table public.nexusops_user_roles add column if not exists email varchar(320);
+
 do $$
 declare constraint_name text;
 begin
