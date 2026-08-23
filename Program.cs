@@ -84,6 +84,7 @@ if (!string.IsNullOrWhiteSpace(connectionString) && Guid.TryParse(tenantId, out 
     builder.Services.AddSingleton<NexusOps.Web.Services.ITeamStore>(services => new NexusOps.Web.Services.PostgresTeamStore(services.GetRequiredService<NpgsqlDataSource>(), parsedTenantId));
     builder.Services.AddSingleton<NexusOps.Web.Services.IInventoryStore>(services => new NexusOps.Web.Services.PostgresInventoryStore(services.GetRequiredService<NpgsqlDataSource>(), parsedTenantId));
     builder.Services.AddSingleton<NexusOps.Web.Services.ICustomerOrderStore>(services => new NexusOps.Web.Services.PostgresCustomerOrderStore(services.GetRequiredService<NpgsqlDataSource>(), parsedTenantId));
+    builder.Services.AddSingleton<NexusOps.Web.Services.ILaborStore>(services => new NexusOps.Web.Services.PostgresLaborStore(services.GetRequiredService<NpgsqlDataSource>(), parsedTenantId));
     builder.Services.AddSingleton<IUserRoleStore>(services =>
         new PostgresUserRoleStore(services.GetRequiredService<NpgsqlDataSource>(), parsedTenantId));
 }
@@ -99,6 +100,7 @@ else
         NexusOps.Web.Services.InMemoryInventoryStore>();
     builder.Services.AddSingleton<NexusOps.Web.Services.ICustomerOrderStore,
         NexusOps.Web.Services.InMemoryCustomerOrderStore>();
+    builder.Services.AddSingleton<NexusOps.Web.Services.ILaborStore, NexusOps.Web.Services.InMemoryLaborStore>();
     builder.Services.AddSingleton<IUserRoleStore, UnconfiguredUserRoleStore>();
 }
 builder.Services.AddTransient<IVoiceProvider>(services => services.GetRequiredService<TwilioVoiceProvider>());
