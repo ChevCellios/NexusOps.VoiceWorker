@@ -14,7 +14,7 @@ public sealed class SupabaseAuthOptions
     public string PublishableKey { get; init; } = string.Empty;
 }
 
-public enum NexusOpsRole { Viewer, Technician, Manager, Administrator }
+public enum NexusOpsRole { Demo, Viewer, Technician, Manager, Administrator }
 
 public interface IUserRoleStore
 {

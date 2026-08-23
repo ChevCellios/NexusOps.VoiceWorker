@@ -22,6 +22,8 @@ The same Railway service also hosts the NexusOps operations interface:
 - **Reports** — filter work orders by status, priority and date; highlight overdue and near-due work; export the current result set as a UTF-8 CSV file for Excel.
 - **Voice Command Center** — available at `/command-center` for controlled voice-call testing and monitoring.
 
+v0.1 also includes finance, team presence, inventory movements and transfers, customer orders with automatic work-order creation, labor cost tracking, and a cost-free mock Notification Center.
+
 The web interface and voice endpoints deliberately share one deployment, domain and PostgreSQL configuration. Application data is separated by the configured `NexusOps:TenantId`.
 
 ### Demo corporation and operations data
@@ -34,8 +36,25 @@ The optional **Adria Dynamics d.o.o.** dataset adds three business units, employ
 4. `004_corporate_operations.sql`
 5. `006_finance_schema_compatibility.sql` when an older `loans` table already exists
 6. `005_adria_dynamics_demo_seed.sql`
+7. `007_customer_order_automation.sql`
+8. `008_work_order_labor.sql`
+9. `009_rls_baseline.sql`
+10. `010_public_demo_access.sql` if you want to enable the restricted public demo user
 
 The seed script is repeatable. It never contains real people or financial data.
+
+### v0.1 demo flow
+
+1. Create a customer order in **Narudžbe**.
+2. Verify its automatically created work order in **Radni nalozi**.
+3. In **Skladište**, issue material and select that work order.
+4. On the work-order detail, record labor time and hourly rate.
+5. Review material and labor costs on the same detail page.
+6. In **Obavijesti**, simulate a notification. It is mock-only and never sends a real message.
+
+### Security baseline
+
+`009_rls_baseline.sql` revokes direct `anon` and `authenticated` access to NexusOps business tables and enables RLS. The v0.1 UI accesses PostgreSQL through the Railway backend, which applies tenant and role checks. Never expose database passwords, service keys, Twilio tokens or OpenAI keys in browser code or source control.
 
 ### Supabase Auth and roles
 
@@ -54,6 +73,17 @@ SupabaseAuth__PublishableKey=YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY
 ```
 
 `PublishableKey` is intended for client-side identification and is not a service-role key. Never add a Supabase `service_role` key to Railway or source control. Once enabled, users without a `nexusops_user_roles` row cannot sign in. `Viewer` users can inspect data but cannot submit changes. `Technician` users can update a work order's status. `Manager` and `Administrator` users can create and edit operational records. NexusOps records the signed-in e-mail in work-order activity events.
+
+### Public demo user
+
+The public demo account has no access to the dashboard, customers, employees, finance, inventory or real telephony. It can only open `/Demo` and simulate a Twilio call for the fictional work order `RN-DEMO-001`.
+
+```text
+E-mail: demo@nexusops.app
+Password: NexusOps!Demo26
+```
+
+To enable it, run `NexusOps.Web/Database/010_public_demo_access.sql`, create that confirmed user under **Supabase Dashboard → Authentication → Users**, then run the final mapping query from the same SQL file after replacing `YOUR_TENANT_UUID`. This public password is intentionally documented and must never be reused for an administrator account. It is not a Railway variable.
 
 ## Run
 
