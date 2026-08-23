@@ -79,7 +79,14 @@
                     <span>Organizacija: <strong>Demo pogon</strong></span>
                     @if (User.Identity?.IsAuthenticated == true)
                     {
-                        <span class="user">@User.Identity.Name · @User.Claims.FirstOrDefault(claim => claim.Type == System.Security.Claims.ClaimTypes.Role)?.Value</span>
+                        @if (User.IsInRole("Demo"))
+                        {
+                            <span class="user">@User.Identity.Name · @User.Claims.FirstOrDefault(claim => claim.Type == System.Security.Claims.ClaimTypes.Role)?.Value</span>
+                        }
+                        else
+                        {
+                            <a class="user" asp-page="/Profile/Index">@User.Identity.Name · @User.Claims.FirstOrDefault(claim => claim.Type == System.Security.Claims.ClaimTypes.Role)?.Value</a>
+                        }
                         <form method="post" asp-page="/Account/Logout" style="display:inline"><button class="back-button" type="submit">Odjava</button></form>
                     }
                     else
