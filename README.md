@@ -22,6 +22,8 @@ The same Railway service also hosts the NexusOps operations interface:
 - **Reports** — filter work orders by status, priority and date; highlight overdue and near-due work; export the current result set as a UTF-8 CSV file for Excel.
 - **Voice Command Center** — available at `/command-center` for controlled voice-call testing and monitoring.
 
+v0.1 also includes finance, team presence, inventory movements and transfers, customer orders with automatic work-order creation, labor cost tracking, and a cost-free mock Notification Center.
+
 The web interface and voice endpoints deliberately share one deployment, domain and PostgreSQL configuration. Application data is separated by the configured `NexusOps:TenantId`.
 
 ### Demo corporation and operations data
@@ -34,8 +36,24 @@ The optional **Adria Dynamics d.o.o.** dataset adds three business units, employ
 4. `004_corporate_operations.sql`
 5. `006_finance_schema_compatibility.sql` when an older `loans` table already exists
 6. `005_adria_dynamics_demo_seed.sql`
+7. `007_customer_order_automation.sql`
+8. `008_work_order_labor.sql`
+9. `009_rls_baseline.sql`
 
 The seed script is repeatable. It never contains real people or financial data.
+
+### v0.1 demo flow
+
+1. Create a customer order in **Narudžbe**.
+2. Verify its automatically created work order in **Radni nalozi**.
+3. In **Skladište**, issue material and select that work order.
+4. On the work-order detail, record labor time and hourly rate.
+5. Review material and labor costs on the same detail page.
+6. In **Obavijesti**, simulate a notification. It is mock-only and never sends a real message.
+
+### Security baseline
+
+`009_rls_baseline.sql` revokes direct `anon` and `authenticated` access to NexusOps business tables and enables RLS. The v0.1 UI accesses PostgreSQL through the Railway backend, which applies tenant and role checks. Never expose database passwords, service keys, Twilio tokens or OpenAI keys in browser code or source control.
 
 ### Supabase Auth and roles
 
