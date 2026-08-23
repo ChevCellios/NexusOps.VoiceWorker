@@ -107,6 +107,7 @@ builder.Services.AddTransient<IVoiceProvider>(services => services.GetRequiredSe
 builder.Services.AddSingleton<IRealtimeClient, OpenAIRealtimeClient>();
 builder.Services.AddSingleton<IVoiceRequestAuthorizer, DevelopmentVoiceRequestAuthorizer>();
 builder.Services.AddSingleton<ITwilioRequestValidator, TwilioRequestValidator>();
+builder.Services.AddSingleton<NexusOps.Web.Services.IDemoNotificationStore, NexusOps.Web.Services.DemoNotificationStore>();
 builder.Services.AddScoped<IVoiceCallService, VoiceCallService>();
 builder.Services.AddSingleton<VoiceMediaWebSocketHandler>();
 builder.Services.AddHostedService<QueuedVoiceCallWorker>();

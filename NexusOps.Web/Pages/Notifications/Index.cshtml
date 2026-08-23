@@ -1,0 +1,7 @@
+@page
+@model NexusOps.Web.Pages.Notifications.IndexModel
+@{ViewData["Title"]="Notification Center";}
+<div class="page-head"><div><span class="eyebrow">Demo komunikacija</span><h1>Notification Center</h1><p>Simulacija obavijesti bez stvarnog slanja i bez troška.</p></div></div>
+@if(TempData["Success"] is string s){<p class="success-message">@s</p>}
+<section class="panel form-panel"><form method="post"><div asp-validation-summary="ModelOnly" class="validation-summary"></div><div class="form-grid"><p><label asp-for="Input.Channel">Kanal</label><select asp-for="Input.Channel" asp-items="Html.GetEnumSelectList<NexusOps.Web.Models.DemoChannel>()"></select></p><p><label asp-for="Input.Recipient">Primatelj</label><input asp-for="Input.Recipient" placeholder="Demo primatelj"/></p><p class="form-wide"><label asp-for="Input.Message">Poruka</label><textarea asp-for="Input.Message" rows="4"></textarea></p></div><button class="btn btn-primary">Simuliraj slanje</button></form></section>
+<section class="panel table-panel"><div class="panel-head"><h2>Povijest</h2><span>@Model.Items.Count Demo sent</span></div><div class="table-wrap"><table><thead><tr><th>Kanal</th><th>Primatelj</th><th>Poruka</th><th>Status</th></tr></thead><tbody>@foreach(var x in Model.Items){<tr><td>@x.Channel</td><td>@x.Recipient</td><td>@x.Message</td><td><span class="tag">Demo sent</span></td></tr>}</tbody></table></div></section>
