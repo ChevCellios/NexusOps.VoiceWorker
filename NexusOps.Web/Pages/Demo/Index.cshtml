@@ -1,0 +1,8 @@
+@page
+@model NexusOps.Web.Pages.Demo.IndexModel
+@{ ViewData["Title"] = "Javni demo"; }
+
+<div class="page-head"><div><span class="eyebrow">Siguran javni prikaz</span><h1>Voice demo</h1><p>Isprobaj tijek obavijesti za radni nalog bez pristupa poslovnim podacima i bez stvarnog telefonskog poziva.</p></div></div>
+@if (TempData["Success"] is string success) { <p class="notice success">@success</p> }
+<section class="panel form-panel"><span class="eyebrow">RN-DEMO-001</span><h2 style="margin-top:8px">Pregled automatizirane pakirne linije</h2><p>Simulirana obavijest: dodjela naloga tehničaru i automatski izlazni Twilio poziv.</p><form method="post" asp-page-handler="StartCall"><button class="btn btn-primary" type="submit">Simuliraj Twilio poziv</button></form></section>
+<section class="panel table-panel" style="margin-top:18px"><div class="panel-head"><h2>Ova demo sesija</h2><span>@Model.Notifications.Count simulacija</span></div><div class="table-wrap"><table><thead><tr><th>Kanal</th><th>Poruka</th><th>Vrijeme</th></tr></thead><tbody>@if (Model.Notifications.Count == 0) { <tr><td colspan="3" class="empty-row">Još nema simuliranih poziva.</td></tr> } @foreach (var notification in Model.Notifications) { <tr><td>@notification.Channel</td><td>@notification.Message</td><td>@notification.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy. HH:mm")</td></tr> }</tbody></table></div></section>

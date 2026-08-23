@@ -39,6 +39,7 @@ The optional **Adria Dynamics d.o.o.** dataset adds three business units, employ
 7. `007_customer_order_automation.sql`
 8. `008_work_order_labor.sql`
 9. `009_rls_baseline.sql`
+10. `010_public_demo_access.sql` if you want to enable the restricted public demo user
 
 The seed script is repeatable. It never contains real people or financial data.
 
@@ -72,6 +73,17 @@ SupabaseAuth__PublishableKey=YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY
 ```
 
 `PublishableKey` is intended for client-side identification and is not a service-role key. Never add a Supabase `service_role` key to Railway or source control. Once enabled, users without a `nexusops_user_roles` row cannot sign in. `Viewer` users can inspect data but cannot submit changes. `Technician` users can update a work order's status. `Manager` and `Administrator` users can create and edit operational records. NexusOps records the signed-in e-mail in work-order activity events.
+
+### Public demo user
+
+The public demo account has no access to the dashboard, customers, employees, finance, inventory or real telephony. It can only open `/Demo` and simulate a Twilio call for the fictional work order `RN-DEMO-001`.
+
+```text
+E-mail: demo@nexusops.app
+Password: NexusOps!Demo26
+```
+
+To enable it, run `NexusOps.Web/Database/010_public_demo_access.sql`, create that confirmed user under **Supabase Dashboard → Authentication → Users**, then run the final mapping query from the same SQL file after replacing `YOUR_TENANT_UUID`. This public password is intentionally documented and must never be reused for an administrator account. It is not a Railway variable.
 
 ## Run
 

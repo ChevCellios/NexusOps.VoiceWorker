@@ -46,8 +46,14 @@
 
     <div class="shell">
         <aside class="side">
-            <a class="brand" asp-page="/Index"><b>N</b>NexusOps</a>
+            <a class="brand" asp-page="@(User.IsInRole("Demo") ? "/Demo/Index" : "/Index")"><b>N</b>NexusOps</a>
             <nav>
+                @if (User.IsInRole("Demo"))
+                {
+                    <a asp-page="/Demo/Index">☎ Pokreni demo poziv</a>
+                }
+                else
+                {
                 <a asp-page="/Index">◈ Nadzorna ploča</a>
                 <a asp-page="/WorkOrders/Index">✓ Radni nalozi</a>
                 <a asp-page="/Orders/Index">▣ Narudžbe</a>
@@ -62,12 +68,13 @@
                     <a asp-page="/Users/Index">◉ Korisnici</a>
                 }
                 <a href="/command-center">☎ Voice Command Center</a>
+                }
             </nav>
             <div class="side-foot">NexusOps v0.1<br /><span>Razvojno okruženje</span></div>
         </aside>
         <main>
             <header>
-                <div class="header-nav"><button type="button" class="back-button" onclick="history.back()">← Natrag</button><a asp-page="/Index">Nadzorna ploča</a></div>
+                <div class="header-nav"><button type="button" class="back-button" onclick="history.back()">← Natrag</button><a asp-page="@(User.IsInRole("Demo") ? "/Demo/Index" : "/Index")">@(User.IsInRole("Demo") ? "Demo" : "Nadzorna ploča")</a></div>
                 <div>
                     <span>Organizacija: <strong>Demo pogon</strong></span>
                     @if (User.Identity?.IsAuthenticated == true)
