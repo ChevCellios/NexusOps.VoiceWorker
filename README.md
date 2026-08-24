@@ -88,7 +88,7 @@ To enable it, run `NexusOps.Web/Database/010_public_demo_access.sql`, create tha
 
 ### Technician work view
 
-`Moji radni nalozi` is available to a `Technician` account. It shows only work orders assigned to that employee and enables personal start/end work tracking. For an existing employee, run `NexusOps.Web/Database/011_employee_auth_link.sql` after replacing its tenant UUID and e-mail. The script links `employees.auth_user_id` to the matching Supabase Auth user. New users created through **Korisnici** are linked automatically when their e-mail already exists in `employees`.
+`Moji radni nalozi` is available to a `Technician` account. It shows only work orders assigned to that employee and enables personal start/end work tracking. For existing employees, run `NexusOps.Web/Database/011_employee_auth_link.sql` once after replacing its tenant UUID. The script links every `employees.auth_user_id` to the matching Supabase Auth user by e-mail and displays a verification list. New users created through **Korisnici** are linked automatically when their e-mail already exists in `employees`.
 
 ## Run
 
