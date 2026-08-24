@@ -48,6 +48,9 @@ public sealed class PostgresUserRoleStore(NpgsqlDataSource dataSource, Guid tena
         await using var command = dataSource.CreateCommand("insert into nexusops_user_roles (tenant_id, user_id, email, role) values ($1,$2,$3,$4)");
         command.Parameters.AddWithValue(tenantId); command.Parameters.AddWithValue(userId); command.Parameters.AddWithValue(email); command.Parameters.AddWithValue(role.ToString());
         await command.ExecuteNonQueryAsync(cancellationToken);
+        await using var employeeLink = dataSource.CreateCommand("update employees set auth_user_id=$3, updated_at=now() where tenant_id=$1 and lower(email)=lower($2) and auth_user_id is null");
+        employeeLink.Parameters.AddWithValue(tenantId); employeeLink.Parameters.AddWithValue(email); employeeLink.Parameters.AddWithValue(userId);
+        await employeeLink.ExecuteNonQueryAsync(cancellationToken);
     }
     public async Task UpdateAsync(Guid userId, NexusOpsRole role, bool isActive, CancellationToken cancellationToken)
     {

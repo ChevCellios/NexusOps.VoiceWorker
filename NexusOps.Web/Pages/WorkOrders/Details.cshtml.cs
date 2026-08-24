@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using NexusOps.Web.Models;
 using NexusOps.Web.Services;
 namespace NexusOps.Web.Pages.WorkOrders;
-public sealed class DetailsModel(IOperationsStore store, IInventoryStore inventoryStore, ILaborStore laborStore) : PageModel
+public sealed class DetailsModel(IOperationsStore store, IInventoryStore inventoryStore, ILaborStore laborStore, ITeamStore teamStore) : PageModel
 {
     public WorkOrder Order { get; private set; } = default!;
     public Asset? Asset { get; private set; }
@@ -33,6 +33,7 @@ public sealed class DetailsModel(IOperationsStore store, IInventoryStore invento
 
     public IActionResult OnPost()
     {
+        if (!CanUpdateStatus(Id)) return Forbid();
         try
         {
             store.UpdateWorkOrderStatus(Id, Status, User.Identity?.Name ?? "Sustav");
@@ -47,4 +48,12 @@ public sealed class DetailsModel(IOperationsStore store, IInventoryStore invento
     }
 
     public IActionResult OnPostLabor(Guid id){if(!User.IsInRole("Administrator")&&!User.IsInRole("Manager"))return Forbid();try{laborStore.Add(id,LaborInput);TempData["Success"]="Rad je evidentiran.";}catch(ArgumentException e){ModelState.AddModelError(string.Empty,e.Message);return OnGet(id);}return RedirectToPage(new{id});}
+    private bool CanUpdateStatus(Guid workOrderId)
+    {
+        if (User.IsInRole("Administrator") || User.IsInRole("Manager")) return true;
+        if (!User.IsInRole("Technician") || !Guid.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var userId)) return false;
+        var employee = teamStore.GetForAuthUser(userId);
+        var order = store.GetWorkOrder(workOrderId);
+        return employee is not null && order is not null && string.Equals(order.AssignedTo, employee.Name, StringComparison.OrdinalIgnoreCase);
+    }
 }
