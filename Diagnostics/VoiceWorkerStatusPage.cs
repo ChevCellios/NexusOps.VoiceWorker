@@ -60,12 +60,10 @@ public static class VoiceWorkerStatusPage
     {
         var health = context.RequestServices.GetRequiredService<HealthCheckService>();
         var report = await health.CheckHealthAsync(context.RequestAborted);
-        var check = report.Entries["voice_worker"];
         context.Response.ContentType = "application/json";
         await JsonSerializer.SerializeAsync(context.Response.Body, new
         {
-            status = report.Status.ToString().ToLowerInvariant(),
-            checks = check.Data
+            status = report.Status.ToString().ToLowerInvariant()
         }, cancellationToken: context.RequestAborted);
     }
 }

@@ -1,6 +1,8 @@
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using NexusOps.VoiceWorker.Realtime.OpenAI;
 
@@ -8,6 +10,8 @@ namespace NexusOps.VoiceWorker.Controllers;
 
 [ApiController]
 [Route("realtime/browser")]
+[Authorize(Roles = "Administrator,Manager")]
+[EnableRateLimiting("realtime")]
 public sealed class BrowserRealtimeController(
     BrowserRealtimeSessionService service,
     IOptions<BrowserRealtimeTestOptions> testOptions) : ControllerBase

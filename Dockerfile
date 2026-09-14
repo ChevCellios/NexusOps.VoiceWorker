@@ -18,5 +18,6 @@ COPY --from=build /app/publish ./
 
 ENV ASPNETCORE_ENVIRONMENT=Production
 EXPOSE 8080
+USER $APP_UID
 
 ENTRYPOINT ["dotnet", "NexusOps.VoiceWorker.dll"]

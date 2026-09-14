@@ -1,3 +1,6 @@
+using System.Security.Claims;
+using NexusOps.VoiceWorker.Persistence;
+
 namespace NexusOps.VoiceWorker.Security;
 
 public interface IVoiceRequestAuthorizer
@@ -5,9 +8,21 @@ public interface IVoiceRequestAuthorizer
     Task<bool> CanAccessCallAsync(Guid voiceCallSessionId, CancellationToken cancellationToken);
 }
 
-// Replace with NexusOps authentication, tenant permissions and webhook signature validation.
-public sealed class DevelopmentVoiceRequestAuthorizer : IVoiceRequestAuthorizer
+public sealed class VoiceRequestAuthorizer(
+    IHttpContextAccessor httpContextAccessor,
+    IVoiceCallRepository calls,
+    IConfiguration configuration) : IVoiceRequestAuthorizer
 {
-    public Task<bool> CanAccessCallAsync(Guid voiceCallSessionId, CancellationToken cancellationToken) =>
-        Task.FromResult(true);
+    public async Task<bool> CanAccessCallAsync(Guid voiceCallSessionId, CancellationToken cancellationToken)
+    {
+        var user = httpContextAccessor.HttpContext?.User;
+        if (user?.Identity?.IsAuthenticated != true) return false;
+        if (!user.IsInRole("Administrator") && !user.IsInRole("Manager")) return false;
+
+        var configuredTenant = configuration["NexusOps:TenantId"];
+        if (!Guid.TryParse(configuredTenant, out var tenantId)) return false;
+        var session = await calls.GetAsync(voiceCallSessionId, cancellationToken);
+        return session is not null && session.TenantId == tenantId &&
+               user.FindFirstValue(ClaimTypes.NameIdentifier) is not null;
+    }
 }

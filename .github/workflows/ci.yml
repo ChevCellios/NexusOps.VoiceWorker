@@ -22,15 +22,32 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Set up .NET 9
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           dotnet-version: 9.0.x
 
       - name: Restore dependencies
         run: dotnet restore NexusOps.VoiceWorker.sln --configfile NuGet.Config
+
+      - name: Audit NuGet dependencies
+        shell: bash
+        run: |
+          dotnet list NexusOps.VoiceWorker.sln package --vulnerable --include-transitive --format json > vulnerable-packages.json
+          python3 - <<'PY'
+          import json
+          report = json.load(open("vulnerable-packages.json", encoding="utf-8"))
+          def contains_vulnerability(value):
+              if isinstance(value, dict):
+                  return bool(value.get("vulnerabilities")) or any(contains_vulnerability(v) for v in value.values())
+              if isinstance(value, list):
+                  return any(contains_vulnerability(v) for v in value)
+              return False
+          if contains_vulnerability(report):
+              raise SystemExit("NuGet audit found vulnerable dependencies.")
+          PY
 
       - name: Build release
         run: dotnet build NexusOps.VoiceWorker.sln --configuration Release --no-restore
@@ -40,3 +57,11 @@ jobs:
 
       - name: Verify Railway Docker image
         run: docker build --tag nexusops-voiceworker:ci .
+
+      - name: Scan Docker image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: nexusops-voiceworker:ci
+          format: table
+          exit-code: '1'
+          severity: CRITICAL,HIGH

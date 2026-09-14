@@ -186,6 +186,7 @@ public sealed class OpenAIRealtimeClient(
 
     private static async Task<string?> ReceiveTextAsync(WebSocket socket, CancellationToken cancellationToken)
     {
+        const int maxMessageBytes = 256 * 1024;
         using var content = new MemoryStream();
         var buffer = new byte[8192];
         WebSocketReceiveResult result;
@@ -195,6 +196,8 @@ public sealed class OpenAIRealtimeClient(
             if (result.MessageType == WebSocketMessageType.Close) return null;
             if (result.MessageType != WebSocketMessageType.Text)
                 throw new InvalidOperationException("Only text WebSocket frames are supported by the media bridge.");
+            if (content.Length + result.Count > maxMessageBytes)
+                throw new InvalidOperationException("WebSocket message exceeded the 256 KB limit.");
             content.Write(buffer, 0, result.Count);
         } while (!result.EndOfMessage);
         return Encoding.UTF8.GetString(content.ToArray());

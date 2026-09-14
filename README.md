@@ -204,4 +204,7 @@ The repository's GitHub Actions workflow validates the application but does not 
 - Keep authentication enabled for non-demo production deployments.
 - Configure the exact public callback origin so Twilio signature validation succeeds.
 - Treat transcript and operational data as sensitive application data.
-- The registered `DevelopmentVoiceRequestAuthorizer` is a development boundary and should be replaced with production tenant authorization before exposing call-start endpoints broadly.
+- Production startup is fail-closed: authentication, tenant, database, provider signatures, secure callback URLs, and a concrete `AllowedHosts` value are mandatory.
+- Voice-call management requires an authenticated Manager or Administrator and verifies that the call belongs to the configured tenant.
+- Rate limits protect login, voice, browser Realtime, and general request traffic; Twilio media streams also have concurrency and duration limits.
+- See [SECURITY.md](SECURITY.md) for the deployment requirements and private vulnerability-reporting process.
