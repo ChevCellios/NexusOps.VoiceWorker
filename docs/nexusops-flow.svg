@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="300" viewBox="0 0 960 300" role="img" aria-labelledby="title desc">
+  <title id="title">NexusOps platform flow</title>
+  <desc id="desc">Animated overview of the operations portal, voice workflow and platform services.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#091426"/>
+      <stop offset="1" stop-color="#12294c"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#6ee7f9"/>
+      <stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <style>
+      .label { fill: #f8fafc; font: 600 17px system-ui, -apple-system, Segoe UI, sans-serif; }
+      .detail { fill: #a9bad2; font: 13px system-ui, -apple-system, Segoe UI, sans-serif; }
+      .flow { stroke: url(#accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 8 12; animation: travel 2.2s linear infinite; }
+      .pulse { animation: pulse 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+      .delay { animation-delay: .7s; }
+      .delay2 { animation-delay: 1.4s; }
+      @keyframes travel { to { stroke-dashoffset: -40; } }
+      @keyframes pulse { 0%, 100% { opacity: .65; transform: scale(.96); } 50% { opacity: 1; transform: scale(1); } }
+      @media (prefers-reduced-motion: reduce) { .flow, .pulse { animation: none; } }
+    </style>
+  </defs>
+  <rect width="960" height="300" rx="24" fill="url(#background)"/>
+  <text x="48" y="48" fill="#6ee7f9" font-family="system-ui, sans-serif" font-size="13" font-weight="700" letter-spacing="2">NEXUSOPS · LIVE OPERATIONS FLOW</text>
+  <path class="flow" d="M250 158H360M600 158H710" fill="none"/>
+  <g class="pulse">
+    <rect x="48" y="94" width="202" height="128" rx="18" fill="#12233d" stroke="#315176"/>
+    <circle cx="82" cy="128" r="12" fill="#38bdf8" filter="url(#glow)"/>
+    <text class="label" x="106" y="134">Operations portal</text>
+    <text class="detail" x="72" y="174">Work orders · Assets</text>
+    <text class="detail" x="72" y="197">Inventory · Finance · Team</text>
+  </g>
+  <g class="pulse delay">
+    <rect x="360" y="78" width="240" height="160" rx="20" fill="#152442" stroke="#6657a8"/>
+    <circle cx="402" cy="119" r="14" fill="#8b5cf6" filter="url(#glow)"/>
+    <text class="label" x="430" y="125">ASP.NET Core</text>
+    <text class="detail" x="397" y="166">Tenant-aware application host</text>
+    <text class="detail" x="397" y="190">REST · WebSocket · Health</text>
+    <text class="detail" x="397" y="214">Authentication · Rate limits</text>
+  </g>
+  <g class="pulse delay2">
+    <rect x="710" y="94" width="202" height="128" rx="18" fill="#12233d" stroke="#315176"/>
+    <circle cx="744" cy="128" r="12" fill="#34d399" filter="url(#glow)"/>
+    <text class="label" x="768" y="134">Connected services</text>
+    <text class="detail" x="734" y="174">PostgreSQL · Twilio</text>
+    <text class="detail" x="734" y="197">OpenAI Realtime</text>
+  </g>
+  <text x="480" y="274" text-anchor="middle" fill="#7187a5" font-family="system-ui, sans-serif" font-size="12">Docker · Railway · GitHub Actions · CodeQL · Trivy</text>
+</svg>

@@ -1,9 +1,24 @@
+<div align="center">
+
 # NexusOps
 
-[![CI](https://github.com/ChevCellios/NexusOps.VoiceWorker/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ChevCellios/NexusOps.VoiceWorker/actions/workflows/ci.yml)
-![.NET 9](https://img.shields.io/badge/.NET-9.0-512BD4)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Npgsql-4169E1)
-![Docker](https://img.shields.io/badge/container-Docker-2496ED)
+### Operations, assets and AI-assisted voice workflows in one secure platform
+
+[![VoiceWorker CI](https://github.com/ChevCellios/NexusOps.VoiceWorker/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ChevCellios/NexusOps.VoiceWorker/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/ChevCellios/NexusOps.VoiceWorker/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/ChevCellios/NexusOps.VoiceWorker/actions/workflows/codeql.yml)
+[![Production](https://img.shields.io/website?url=https%3A%2F%2Fnexusopsvoiceworker-production.up.railway.app%2Fhealth&up_message=healthy&up_color=22c55e&down_message=unavailable&down_color=ef4444&label=Railway)](https://nexusopsvoiceworker-production.up.railway.app/health)
+[![.NET 9](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Npgsql-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/container-Docker-2496ED?logo=docker&logoColor=white)](Dockerfile)
+
+[**Open production**](https://nexusopsvoiceworker-production.up.railway.app/) · [Health status](https://nexusopsvoiceworker-production.up.railway.app/health) · [Security policy](SECURITY.md)
+
+![Animated NexusOps platform flow](docs/nexusops-flow.svg)
+
+</div>
+
+> [!IMPORTANT]
+> The production portal requires configured access. The `/health` endpoint is public so Railway and external monitors can verify service readiness without exposing operational data.
 
 NexusOps is a .NET 9 operations portal with an integrated voice-call service. It combines work-order, asset, inventory, finance, team, and customer-order workflows with Twilio telephony and an OpenAI Realtime audio bridge in one ASP.NET Core deployment.
 
