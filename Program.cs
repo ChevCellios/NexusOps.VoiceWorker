@@ -274,7 +274,7 @@ app.MapRazorPages()
     .WithStaticAssets();
 app.MapGet("/status", VoiceWorkerStatusPage.WriteAsync)
     .RequireAuthorization(policy => policy.RequireRole("Administrator"));
-app.MapGet("/health", VoiceWorkerStatusPage.WriteHealthAsync)
+app.MapMethods("/health", [HttpMethods.Get, HttpMethods.Head], VoiceWorkerStatusPage.WriteHealthAsync)
     .DisableRateLimiting();
 app.MapGet("/command-center", () => Results.Redirect("/index.html", permanent: false));
 app.Map("/voice/media", async context =>

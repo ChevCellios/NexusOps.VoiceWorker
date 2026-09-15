@@ -1,4 +1,7 @@
 appsettings.Local.json
+.env
+.env.*
+!.env.example
 nexusops.connection.local.txt
 openai.key.local.txt
 twilio.local.txt

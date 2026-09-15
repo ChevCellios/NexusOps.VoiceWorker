@@ -111,7 +111,7 @@ Open the local URL printed by ASP.NET Core. Useful routes include:
 | --- | --- |
 | `/` | Operations dashboard |
 | `/command-center` | Voice Command Center |
-| `/health` | JSON readiness response |
+| `/health` | JSON readiness response (`GET` and `HEAD`) |
 | `/status` | HTML service status |
 | `/voice/media` | Twilio WebSocket endpoint; not a browser page |
 
@@ -120,6 +120,8 @@ The Development profile uses in-memory persistence unless a database connection 
 ## Configuration
 
 Use .NET User Secrets for local development or environment variables in deployment. Nested configuration keys use double underscores as environment-variable separators.
+
+Configuration key names are safe to document. Their real values are not: keep passwords, tokens, connection strings, and provider credentials only in User Secrets or Railway Variables. Every `YOUR_...` value below is a placeholder and must never be replaced with a real secret in a committed file. The Supabase publishable/anon key is intended for client identification, but the service-role key is privileged and must never be used here.
 
 ```powershell
 dotnet user-secrets set "ConnectionStrings:NexusOps" "Host=localhost;Port=5432;Database=nexusops;Username=postgres;Password=YOUR_PASSWORD" --project NexusOps.VoiceWorker.csproj
