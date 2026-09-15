@@ -5,12 +5,6 @@ using Microsoft.Extensions.Options;
 
 namespace NexusOps.VoiceWorker.Realtime.OpenAI;
 
-public sealed class BrowserRealtimeTestOptions
-{
-    public const string SectionName = "BrowserRealtimeTest";
-    public string AccessKey { get; init; } = string.Empty;
-}
-
 public sealed class BrowserRealtimeSessionService(
     HttpClient httpClient,
     IOptions<OpenAIRealtimeOptions> options,
@@ -44,8 +38,8 @@ public sealed class BrowserRealtimeSessionService(
         using var response = await httpClient.SendAsync(request, cancellationToken);
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
-            logger.LogError("OpenAI browser Realtime session failed with HTTP {StatusCode}: {Response}",
-                (int)response.StatusCode, body);
+            logger.LogError("OpenAI browser Realtime session failed with HTTP {StatusCode}.",
+                (int)response.StatusCode);
         return (response.IsSuccessStatusCode, body);
     }
 }

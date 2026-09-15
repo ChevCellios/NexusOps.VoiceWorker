@@ -10,6 +10,7 @@ using NexusOps.VoiceWorker.WebSockets;
 using NexusOps.VoiceWorker.Workers;
 using Npgsql;
 using NexusOps.VoiceWorker.Diagnostics;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
@@ -45,7 +46,6 @@ builder.Services.AddOptions<TwilioOptions>().BindConfiguration(TwilioOptions.Sec
 builder.Services.AddOptions<OpenAIRealtimeOptions>().BindConfiguration(OpenAIRealtimeOptions.SectionName);
 builder.Services.AddHttpClient<TwilioVoiceProvider>();
 builder.Services.AddHttpClient<BrowserRealtimeSessionService>();
-builder.Services.AddOptions<BrowserRealtimeTestOptions>().BindConfiguration(BrowserRealtimeTestOptions.SectionName);
 builder.Services.AddOptions<SupabaseAuthOptions>().BindConfiguration(SupabaseAuthOptions.SectionName);
 builder.Services.AddOptions<VoiceMediaSecurityOptions>().BindConfiguration(VoiceMediaSecurityOptions.SectionName);
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -67,6 +67,32 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.SameSite = SameSiteMode.Strict;
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
+        options.Events.OnValidatePrincipal = async context =>
+        {
+            var issuedAt = context.Properties.IssuedUtc;
+            if (issuedAt is not null && DateTimeOffset.UtcNow - issuedAt.Value < TimeSpan.FromMinutes(5)) return;
+
+            var userIdValue = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var roleValue = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+            if (!Guid.TryParse(userIdValue, out var userId))
+            {
+                context.RejectPrincipal();
+                await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return;
+            }
+
+            var roleStore = context.HttpContext.RequestServices.GetRequiredService<IUserRoleStore>();
+            var currentRole = await roleStore.FindRoleAsync(userId, context.HttpContext.RequestAborted);
+            if (currentRole is null || !string.Equals(currentRole.Value.ToString(), roleValue, StringComparison.Ordinal))
+            {
+                context.RejectPrincipal();
+                await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return;
+            }
+
+            context.Properties.IssuedUtc = DateTimeOffset.UtcNow;
+            context.ShouldRenew = true;
+        };
     });
 builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
@@ -182,10 +208,21 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.Use(async (context, next) =>
 {
-    if ((context.Request.Path == "/index.html" || context.Request.Path.StartsWithSegments("/command-center")) &&
-        context.User.Identity?.IsAuthenticated != true)
+    var isCommandCenter = context.Request.Path == "/index.html" ||
+                          context.Request.Path.StartsWithSegments("/command-center");
+    var isRealtimeTest = context.Request.Path == "/realtime-test.html";
+    if (isCommandCenter && !context.User.IsInRole("Administrator"))
     {
-        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        context.Response.StatusCode = context.User.Identity?.IsAuthenticated == true
+            ? StatusCodes.Status403Forbidden
+            : StatusCodes.Status401Unauthorized;
+        return;
+    }
+    if (isRealtimeTest && !context.User.IsInRole("Administrator") && !context.User.IsInRole("Manager"))
+    {
+        context.Response.StatusCode = context.User.Identity?.IsAuthenticated == true
+            ? StatusCodes.Status403Forbidden
+            : StatusCodes.Status401Unauthorized;
         return;
     }
     await next();

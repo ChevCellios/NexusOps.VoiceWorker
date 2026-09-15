@@ -15,7 +15,7 @@ public sealed class LoginModel(SupabaseSignInService signInService) : PageModel
     [BindProperty] public string Password { get; set; } = string.Empty;
     [BindProperty(SupportsGet = true)] public string? ReturnUrl { get; set; }
 
-    public IActionResult OnGet() => User.Identity?.IsAuthenticated == true ? LocalRedirect(ReturnUrl ?? "/") : Page();
+    public IActionResult OnGet() => User.Identity?.IsAuthenticated == true ? LocalRedirect(SafeReturnUrl()) : Page();
 
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
@@ -40,6 +40,8 @@ public sealed class LoginModel(SupabaseSignInService signInService) : PageModel
             new Claim(ClaimTypes.Role, result.Role!.Value.ToString())
         };
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)));
-        return LocalRedirect(ReturnUrl ?? "/");
+        return LocalRedirect(SafeReturnUrl());
     }
+
+    private string SafeReturnUrl() => Url.IsLocalUrl(ReturnUrl) ? ReturnUrl! : "/";
 }

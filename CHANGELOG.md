@@ -4,6 +4,12 @@ All notable changes are documented here. This project follows Semantic Versionin
 
 ## [Unreleased]
 
+### Fixed
+
+- Replaced obsolete Command Center and browser Realtime access-key prompts with role-protected cookie authentication.
+- Revalidated active user roles during long-lived sessions and rejected unsafe return URLs.
+- Limited browser Realtime request sizes and removed upstream response bodies from provider error logs.
+
 ## [0.2.0-beta.1] - 2026-09-15
 
 ### Added

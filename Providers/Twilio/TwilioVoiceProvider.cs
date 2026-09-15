@@ -54,8 +54,8 @@ public sealed class TwilioVoiceProvider(
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
-            logger.LogError("Twilio rejected call {SessionId} with HTTP {StatusCode}: {Response}",
-                session.Id, (int)response.StatusCode, body);
+            logger.LogError("Twilio rejected call {SessionId} with HTTP {StatusCode}.",
+                session.Id, (int)response.StatusCode);
             throw new HttpRequestException("Twilio rejected the outbound call request.", null, response.StatusCode);
         }
 
