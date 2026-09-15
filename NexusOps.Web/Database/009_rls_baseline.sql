@@ -9,10 +9,11 @@ begin
   foreach table_name in array array[
     'tenants','organizations','assets','work_orders','work_order_events',
     'nexusops_user_roles','financial_accounts','financial_categories',
-    'financial_transactions','loans','tenders','tender_documents','employees',
-    'employee_presence','employee_absences','employee_work_policies',
+    'financial_transactions','loans','loan_installments','public_tenders','public_tender_documents','employees',
+    'employee_presence','employee_presence_events','employee_absences','employee_work_policies',
     'employee_time_entries','warehouses','inventory_items','inventory_stock',
-    'inventory_movements','fleet_assets','customer_orders','work_order_labor_entries'
+    'inventory_movements','fleet_assets','customer_orders','work_order_labor_entries',
+    'nexusops_release_metadata','nexusops_schema_migrations'
   ] loop
     if to_regclass('public.' || table_name) is not null then
       execute format('revoke all on table public.%I from anon, authenticated', table_name);
@@ -28,9 +29,10 @@ where relnamespace = 'public'::regnamespace
   and relname in (
     'tenants','organizations','assets','work_orders','work_order_events',
     'nexusops_user_roles','financial_accounts','financial_categories',
-    'financial_transactions','loans','tenders','tender_documents','employees',
-    'employee_presence','employee_absences','employee_work_policies',
+    'financial_transactions','loans','loan_installments','public_tenders','public_tender_documents','employees',
+    'employee_presence','employee_presence_events','employee_absences','employee_work_policies',
     'employee_time_entries','warehouses','inventory_items','inventory_stock',
-    'inventory_movements','fleet_assets','customer_orders','work_order_labor_entries'
+    'inventory_movements','fleet_assets','customer_orders','work_order_labor_entries',
+    'nexusops_release_metadata','nexusops_schema_migrations'
   )
 order by relname;
