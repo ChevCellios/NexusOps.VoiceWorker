@@ -4,4 +4,5 @@ openai.key.local.txt
 twilio.local.txt
 bin/
 obj/
+publish-check/
 .vs/

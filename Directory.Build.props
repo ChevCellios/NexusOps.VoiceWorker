@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <VersionPrefix>0.2.0</VersionPrefix>
+    <VersionSuffix>beta.1</VersionSuffix>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <RepositoryUrl>https://github.com/ChevCellios/NexusOps.VoiceWorker</RepositoryUrl>
+  </PropertyGroup>
+</Project>

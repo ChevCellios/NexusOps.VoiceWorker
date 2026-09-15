@@ -115,6 +115,7 @@ if (useInMemoryPersistence)
 else
 {
     builder.Services.AddSingleton(NpgsqlDataSource.Create(connectionString!));
+    builder.Services.AddHostedService<DatabaseMigrationService>();
     builder.Services.AddSingleton<IVoiceCallRepository, PostgresVoiceCallRepository>();
     builder.Services.AddSingleton<IVoiceTranscriptRepository, PostgresVoiceTranscriptRepository>();
 }

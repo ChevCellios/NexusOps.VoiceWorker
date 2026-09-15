@@ -43,6 +43,7 @@ public sealed class VoiceWorkerHealthCheck(
 
         var data = new Dictionary<string, object>
         {
+            ["version"] = ApplicationVersion.Current,
             ["persistence"] = persistence,
             ["databaseConnected"] = databaseConnected,
             ["twilioConfigured"] = twilioReady,
