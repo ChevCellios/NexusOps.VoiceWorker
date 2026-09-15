@@ -22,6 +22,8 @@
 
 NexusOps is a .NET 9 operations portal with an integrated voice-call service. It combines work-order, asset, inventory, finance, team, and customer-order workflows with Twilio telephony and an OpenAI Realtime audio bridge in one ASP.NET Core deployment.
 
+Current release: **0.2.0-beta.1**. See [CHANGELOG.md](CHANGELOG.md) and [docs/UPGRADING.md](docs/UPGRADING.md) before upgrading a deployed installation.
+
 The application supports PostgreSQL-backed, tenant-scoped data for deployment and in-memory stores for local development. Supabase Auth can be enabled for email/password sign-in and role-based access.
 
 ## Features
@@ -166,6 +168,8 @@ For a PostgreSQL/Supabase deployment, apply the scripts in `NexusOps.Web/Databas
 
 Read each script before applying it. The compatibility, demo-access, and employee-link scripts contain scenario-specific guidance and placeholders. The Adria Dynamics seed is fictional and repeatable.
 
+Future schema changes are applied automatically from `Database/Migrations`. The runner records each migration and checksum in `nexusops_schema_migrations`, uses a PostgreSQL advisory lock, and runs each file in a transaction. Disable it with `DatabaseMigrations__Enabled=false` only if migrations are managed separately. Never modify a migration after deployment.
+
 ### Authentication and roles
 
 Authentication is off by default. After applying `002_user_access.sql`, create users in Supabase Auth and map them to NexusOps roles. Implemented roles are:
@@ -212,6 +216,8 @@ docker run --rm -p 8080:8080 --env-file .env nexusops
 For Railway, copy the keys from `railway.variables.example.txt` into the service's Variables settings and replace every placeholder. The app binds to `0.0.0.0:$PORT`; configure `/health` as the health-check path and set the Twilio public URLs after Railway assigns a public domain.
 
 The repository's GitHub Actions workflow validates the application but does not deploy it. Deployment can be handled by Railway's GitHub integration after CI succeeds.
+
+Tags matching the application version, such as `v0.2.0-beta.1`, trigger the release workflow and create a GitHub prerelease artifact. Use a separate Railway staging service and database before promoting the same tag to production; rollback instructions are in [docs/UPGRADING.md](docs/UPGRADING.md).
 
 ## Security notes
 

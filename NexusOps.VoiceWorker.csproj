@@ -13,4 +13,8 @@
     <ProjectReference Include="NexusOps.Web\NexusOps.Web.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Database\Migrations\*.sql" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

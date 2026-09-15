@@ -13,6 +13,7 @@ public static class VoiceWorkerStatusPage
         var check = report.Entries["voice_worker"];
         Func<string, string> encode = value => HtmlEncoder.Default.Encode(value);
         var persistence = encode(check.Data["persistence"].ToString()!);
+        var version = encode(check.Data["version"].ToString()!);
         var database = (bool)check.Data["databaseConnected"] ? "Connected" : "Not connected";
         var twilio = (bool)check.Data["twilioConfigured"] ? "Configured" : "Not configured";
         var openAi = (bool)check.Data["openAiConfigured"] ? "Configured" : "Not configured";
@@ -40,6 +41,7 @@ public static class VoiceWorkerStatusPage
               <h1>NexusOps Voice Worker</h1>
               <p class="ok">● Servis radi</p>
               <table>
+                <tr><td>Version</td><td>{{version}}</td></tr>
                 <tr><td>Persistence</td><td>{{persistence}}</td></tr>
                 <tr><td>Database</td><td class="{{(database == "Connected" ? "ok" : "warn")}}">{{database}}</td></tr>
                 <tr><td>Twilio</td><td class="{{(twilio == "Configured" ? "ok" : "warn")}}">{{twilio}}</td></tr>
@@ -63,7 +65,8 @@ public static class VoiceWorkerStatusPage
         context.Response.ContentType = "application/json";
         await JsonSerializer.SerializeAsync(context.Response.Body, new
         {
-            status = report.Status.ToString().ToLowerInvariant()
+            status = report.Status.ToString().ToLowerInvariant(),
+            version = ApplicationVersion.Current
         }, cancellationToken: context.RequestAborted);
     }
 }
