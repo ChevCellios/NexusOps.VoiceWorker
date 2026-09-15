@@ -16,8 +16,6 @@
 <body><main>
   <h1>NexusOps Voice test</h1>
   <p>Testiraj OpenAI Realtime razgovor putem mikrofona, bez Twilio poziva.</p>
-  <label for="key">Testna lozinka</label>
-  <input id="key" type="password" autocomplete="off" placeholder="BrowserRealtimeTest access key">
   <button id="start">Pokreni razgovor</button><button id="stop" disabled>Zaustavi</button>
   <div id="status">Spremno.</div><pre id="events"></pre>
 </main>
@@ -32,8 +30,6 @@ async function stop(){
 }
 document.querySelector('#stop').onclick=stop;
 document.querySelector('#start').onclick=async()=>{
-  const key=document.querySelector('#key').value;
-  if(!key){status('Upiši testnu lozinku.');return}
   document.querySelector('#start').disabled=true; status('Tražim dopuštenje za mikrofon...');
   try{
     pc=new RTCPeerConnection();
@@ -44,7 +40,7 @@ document.querySelector('#start').onclick=async()=>{
     dc.onmessage=e=>{try{const x=JSON.parse(e.data);if(x.type==='error'||x.type?.includes('transcript'))log(e.data)}catch{log(e.data)}};
     dc.onclose=()=>status('Veza je zatvorena.');
     const offer=await pc.createOffer(); await pc.setLocalDescription(offer);
-    const response=await fetch('/realtime/browser/session',{method:'POST',headers:{'Content-Type':'application/sdp','X-NexusOps-Test-Key':key},body:offer.sdp});
+    const response=await fetch('/realtime/browser/session',{method:'POST',headers:{'Content-Type':'application/sdp'},credentials:'same-origin',body:offer.sdp});
     const answerSdp=await response.text(); if(!response.ok)throw new Error('Server '+response.status+': '+answerSdp);
     await pc.setRemoteDescription({type:'answer',sdp:answerSdp});
     document.querySelector('#stop').disabled=false; status('Povezivanje s OpenAI Realtime...');

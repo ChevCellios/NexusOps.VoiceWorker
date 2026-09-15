@@ -62,6 +62,8 @@ public sealed class TwilioStatusWebhookRequest
 
 public sealed record ProviderAnswerRequest(Guid VoiceCallSessionId);
 public sealed record ProviderAnswerResponse(Guid VoiceCallSessionId, string MediaStreamUrl);
-public sealed record CompleteVoiceCallRequest(string? Summary);
-public sealed record FailVoiceCallRequest([Required] string Reason);
-public sealed record VoiceCallOutcomeRequest([Required] string Outcome, string? Notes);
+public sealed record CompleteVoiceCallRequest([StringLength(2000)] string? Summary);
+public sealed record FailVoiceCallRequest([Required, StringLength(1000)] string Reason);
+public sealed record VoiceCallOutcomeRequest(
+    [Required, StringLength(1000)] string Outcome,
+    [StringLength(2000)] string? Notes);

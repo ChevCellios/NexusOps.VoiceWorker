@@ -26,6 +26,8 @@ The application trusts one forwarded proxy hop because Railway terminates TLS at
 - Admin APIs require the Administrator role.
 - Browser Realtime sessions require a Manager or Administrator plus the configured test access key.
 - Demo users must never receive access to operational or voice-management endpoints.
+- Active cookie sessions revalidate the database-backed role every five minutes, so disabled users and changed roles lose stale access.
+- Command Center access requires the Administrator role; browser Realtime testing requires Manager or Administrator.
 
 ## Release checks
 
