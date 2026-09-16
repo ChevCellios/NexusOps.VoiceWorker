@@ -14,6 +14,7 @@ public interface IVoiceCallRepository
         VoiceCallStatus expectedStatus,
         string? expectedProviderCallId,
         CancellationToken cancellationToken);
+    Task<bool> TryRequeueAsync(Guid id, CancellationToken cancellationToken);
 }
 
 public sealed class InMemoryVoiceCallRepository : IVoiceCallRepository
@@ -51,6 +52,25 @@ public sealed class InMemoryVoiceCallRepository : IVoiceCallRepository
                 return Task.FromResult(false);
 
             _sessions[session.Id] = session;
+            return Task.FromResult(true);
+        }
+    }
+
+    public Task<bool> TryRequeueAsync(Guid id, CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            if (!_sessions.TryGetValue(id, out var current) || current.Status != VoiceCallStatus.Failed ||
+                current.ProviderCallId is not null)
+                return Task.FromResult(false);
+            _sessions[id] = current with
+            {
+                Status = VoiceCallStatus.Queued,
+                FailureReason = null,
+                StartedAt = null,
+                EndedAt = null,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
             return Task.FromResult(true);
         }
     }
@@ -161,6 +181,18 @@ public sealed class PostgresVoiceCallRepository(NpgsqlDataSource dataSource) : I
         AddUpdateParameters(command, session);
         command.Parameters.AddWithValue(ToDatabaseStatus(expectedStatus));
         command.Parameters.AddWithValue((object?)expectedProviderCallId ?? DBNull.Value);
+        return await command.ExecuteNonQueryAsync(cancellationToken) == 1;
+    }
+
+    public async Task<bool> TryRequeueAsync(Guid id, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            update voice_call_sessions
+            set status = 'queued', result_summary = null, started_at = null, ended_at = null, updated_at = now()
+            where id = $1 and status = 'failed' and provider_call_id is null
+            """;
+        await using var command = dataSource.CreateCommand(sql);
+        command.Parameters.AddWithValue(id);
         return await command.ExecuteNonQueryAsync(cancellationToken) == 1;
     }
 

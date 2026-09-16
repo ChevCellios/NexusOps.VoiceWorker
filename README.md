@@ -7,7 +7,7 @@
 [![VoiceWorker CI](https://github.com/ChevCellios/NexusOps.VoiceWorker/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ChevCellios/NexusOps.VoiceWorker/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/ChevCellios/NexusOps.VoiceWorker/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/ChevCellios/NexusOps.VoiceWorker/actions/workflows/codeql.yml)
 [![Production](https://img.shields.io/website?url=https%3A%2F%2Fnexusopsvoiceworker-production.up.railway.app%2Fhealth&up_message=healthy&up_color=22c55e&down_message=unavailable&down_color=ef4444&label=Railway)](https://nexusopsvoiceworker-production.up.railway.app/health)
-[![.NET 9](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Npgsql-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/container-Docker-2496ED?logo=docker&logoColor=white)](Dockerfile)
 
@@ -20,7 +20,7 @@
 > [!IMPORTANT]
 > The production portal requires configured access. The `/health` endpoint is public so Railway and external monitors can verify service readiness without exposing operational data.
 
-NexusOps is a .NET 9 operations portal with an integrated voice-call service. It combines work-order, asset, inventory, finance, team, and customer-order workflows with Twilio telephony and an OpenAI Realtime audio bridge in one ASP.NET Core deployment.
+NexusOps is a .NET 10 LTS operations portal with an integrated voice-call service. It combines work-order, asset, inventory, finance, team, and customer-order workflows with Twilio telephony and an OpenAI Realtime audio bridge in one ASP.NET Core deployment.
 
 Current release: **0.2.0-beta.1**. See [CHANGELOG.md](CHANGELOG.md) and [docs/UPGRADING.md](docs/UPGRADING.md) before upgrading a deployed installation.
 
@@ -51,13 +51,13 @@ The application supports PostgreSQL-backed, tenant-scoped data for deployment an
 - JSON health endpoint and HTML service status page
 
 > [!NOTE]
-> The hosted `QueuedVoiceCallWorker` is currently a placeholder: queue polling is intentionally disabled. Calls can be initiated through the implemented HTTP flow.
+> PostgreSQL deployments process queued voice sessions through a durable lease-based worker. In-memory development still initiates calls through the HTTP flow.
 
 ## Technology
 
 | Area | Implementation |
 | --- | --- |
-| Runtime | .NET 9, ASP.NET Core |
+| Runtime | .NET 10 LTS, ASP.NET Core |
 | Web UI | Razor Pages, Bootstrap |
 | Database | PostgreSQL via Npgsql |
 | Authentication | Optional Supabase Auth with cookie sessions |
@@ -77,7 +77,7 @@ The application supports PostgreSQL-backed, tenant-scoped data for deployment an
 ├── Realtime/OpenAI/         # OpenAI Realtime clients
 ├── Security/                # Voice authorization and Twilio signature validation
 ├── WebSockets/              # Twilio media-stream handler
-├── Workers/                 # Hosted queue worker placeholder
+├── Workers/                 # Durable PostgreSQL voice-call queue worker
 ├── NexusOps.Web/            # Razor Pages operations portal and database scripts
 ├── NexusOps.Web.Tests/      # Operations, inventory, and order unit tests
 ├── wwwroot/                 # Voice Command Center static interface
@@ -91,7 +91,7 @@ The root `NexusOps.VoiceWorker` host references `NexusOps.Web` and serves the po
 
 ### Prerequisites
 
-- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - PostgreSQL only if you want persistent data
 - Twilio and OpenAI credentials only if you want to place real voice calls
 
@@ -146,6 +146,8 @@ Key settings:
 | `Twilio__FromPhoneNumber` | Caller number owned by the Twilio account |
 | `Twilio__PublicBaseUrl` | Public HTTPS origin used for Twilio callbacks |
 | `Twilio__MediaStreamUrl` | Public `wss://.../voice/media` URL |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Optional OTLP collector endpoint for traces and metrics |
+| `VoiceCallQueue__Enabled` | Enables durable PostgreSQL queue processing; defaults to `true` |
 | `SupabaseAuth__Enabled` | Enables Supabase sign-in support |
 | `SupabaseAuth__RequireAuthenticatedUsers` | Requires authentication for portal pages |
 | `SupabaseAuth__Url` | Supabase project URL |
@@ -217,6 +219,8 @@ docker run --rm -p 8080:8080 --env-file .env nexusops
 ```
 
 For Railway, copy the keys from `railway.variables.example.txt` into the service's Variables settings and replace every placeholder. The app binds to `0.0.0.0:$PORT`; configure `/health` as the health-check path and set the Twilio public URLs after Railway assigns a public domain.
+
+Queued PostgreSQL sessions are claimed with leases and `FOR UPDATE SKIP LOCKED`. Twilio `429 Too Many Requests` responses are retried with exponential backoff; ambiguous provider failures are moved to `dead_letter` to avoid duplicate billable calls. Set `RUN_POSTGRES_INTEGRATION_TESTS=1` when Docker is available to run the Testcontainers-backed queue tests.
 
 The repository's GitHub Actions workflow validates the application but does not deploy it. Deployment can be handled by Railway's GitHub integration after CI succeeds.
 

@@ -17,3 +17,9 @@ SupabaseAuth__PublishableKey=YOUR_SUPABASE_PUBLISHABLE_KEY
 AllowedHosts=YOUR_RAILWAY_DOMAIN
 VoiceMediaSecurity__MaxConcurrentStreams=10
 VoiceMediaSecurity__MaxSessionMinutes=30
+VoiceCallQueue__Enabled=true
+VoiceCallQueue__PollIntervalSeconds=2
+VoiceCallQueue__LeaseMinutes=5
+VoiceCallQueue__MaxAttempts=4
+# Optional: point this at an OTLP collector to export traces and metrics.
+OTEL_EXPORTER_OTLP_ENDPOINT=
