@@ -10,8 +10,9 @@
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Npgsql-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/container-Docker-2496ED?logo=docker&logoColor=white)](Dockerfile)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[**Open production**](https://nexusopsvoiceworker-production.up.railway.app/) · [Health status](https://nexusopsvoiceworker-production.up.railway.app/health) · [Security policy](SECURITY.md)
+[**Open production**](https://nexusopsvoiceworker-production.up.railway.app/) · [Health status](https://nexusopsvoiceworker-production.up.railway.app/health) · [Security policy](SECURITY.md) · [License](LICENSE)
 
 ![Animated NexusOps platform flow](docs/nexusops-flow.svg)
 
@@ -47,7 +48,9 @@ The application supports PostgreSQL-backed, tenant-scoped data for deployment an
 - Bidirectional Twilio Media Streams over WebSocket
 - OpenAI Realtime audio bridge using G.711 μ-law, server VAD, and interruption handling
 - Call-session persistence and ordered transcript storage in PostgreSQL
+- Durable PostgreSQL queue with leased `FOR UPDATE SKIP LOCKED` claims, bounded retries, and dead-letter handling
 - Browser Realtime session endpoint and a local Command Center test interface
+- OpenTelemetry traces, metrics, and correlation IDs across HTTP, queue, Twilio, WebSocket, and OpenAI operations
 - JSON health endpoint and HTML service status page
 
 > [!NOTE]
@@ -63,7 +66,8 @@ The application supports PostgreSQL-backed, tenant-scoped data for deployment an
 | Authentication | Optional Supabase Auth with cookie sessions |
 | Telephony | Twilio Calls API and Media Streams |
 | Voice AI | OpenAI Realtime API |
-| Tests | xUnit |
+| Observability | OpenTelemetry traces and metrics with optional OTLP export |
+| Tests | xUnit and Testcontainers for PostgreSQL integration tests |
 | Delivery | Docker, GitHub Actions, Railway-ready configuration |
 
 ## Project structure
@@ -71,15 +75,15 @@ The application supports PostgreSQL-backed, tenant-scoped data for deployment an
 ```text
 .
 ├── Controllers/             # Voice, provider, browser-session, and admin endpoints
-├── Diagnostics/             # Health and status responses
-├── Persistence/             # In-memory and PostgreSQL voice repositories
+├── Diagnostics/             # Health, status, tracing, and metrics
+├── Persistence/             # In-memory/PostgreSQL sessions and durable queue
 ├── Providers/Twilio/        # Outbound Twilio provider
 ├── Realtime/OpenAI/         # OpenAI Realtime clients
 ├── Security/                # Voice authorization and Twilio signature validation
 ├── WebSockets/              # Twilio media-stream handler
 ├── Workers/                 # Durable PostgreSQL voice-call queue worker
 ├── NexusOps.Web/            # Razor Pages operations portal and database scripts
-├── NexusOps.Web.Tests/      # Operations, inventory, and order unit tests
+├── NexusOps.Web.Tests/      # Unit and PostgreSQL integration tests
 ├── wwwroot/                 # Voice Command Center static interface
 ├── Dockerfile
 └── NexusOps.VoiceWorker.sln
@@ -110,9 +114,9 @@ Open the local URL printed by ASP.NET Core. Useful routes include:
 | Route | Purpose |
 | --- | --- |
 | `/` | Operations dashboard |
-| `/command-center` | Voice Command Center |
+| `/command-center` | Role-protected Voice Command Center; unauthenticated users receive demo/sign-in guidance |
 | `/health` | JSON readiness response (`GET` and `HEAD`) |
-| `/status` | HTML service status |
+| `/status` | Administrator-only HTML service status |
 | `/voice/media` | Twilio WebSocket endpoint; not a browser page |
 
 The Development profile uses in-memory persistence unless a database connection is supplied. Data resets when the process stops.
@@ -148,6 +152,9 @@ Key settings:
 | `Twilio__MediaStreamUrl` | Public `wss://.../voice/media` URL |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Optional OTLP collector endpoint for traces and metrics |
 | `VoiceCallQueue__Enabled` | Enables durable PostgreSQL queue processing; defaults to `true` |
+| `VoiceCallQueue__PollIntervalSeconds` | Queue polling interval; defaults to `2` seconds |
+| `VoiceCallQueue__LeaseMinutes` | Claim lease duration; defaults to `5` minutes |
+| `VoiceCallQueue__MaxAttempts` | Maximum Twilio throttling attempts before dead-lettering; defaults to `4` |
 | `SupabaseAuth__Enabled` | Enables Supabase sign-in support |
 | `SupabaseAuth__RequireAuthenticatedUsers` | Requires authentication for portal pages |
 | `SupabaseAuth__Url` | Supabase project URL |
@@ -173,7 +180,7 @@ For a PostgreSQL/Supabase deployment, apply the scripts in `NexusOps.Web/Databas
 
 Read each script before applying it. The compatibility, demo-access, and employee-link scripts contain scenario-specific guidance and placeholders. The Adria Dynamics seed is fictional and repeatable.
 
-Future schema changes are applied automatically from `Database/Migrations`. The runner records each migration and checksum in `nexusops_schema_migrations`, uses a PostgreSQL advisory lock, and runs each file in a transaction. Disable it with `DatabaseMigrations__Enabled=false` only if migrations are managed separately. Never modify a migration after deployment.
+Future schema changes are applied automatically from `Database/Migrations`, including `005_voice_call_queue.sql` for durable call processing. The runner records each migration and checksum in `nexusops_schema_migrations`, uses a PostgreSQL advisory lock, and runs each file in a transaction. Disable it with `DatabaseMigrations__Enabled=false` only if migrations are managed separately. Never modify a migration after deployment.
 
 ### Authentication and roles
 
@@ -190,16 +197,24 @@ Authentication is off by default. After applying `002_user_access.sql`, create u
 ## Voice-call flow
 
 ```text
-Client → Voice API → Twilio Calls API
-                       ↓
-              answer/status callbacks
-                       ↓
-Twilio Media Stream ↔ /voice/media ↔ OpenAI Realtime
-                       ↓
-             PostgreSQL sessions/transcripts
+Client → Voice API → PostgreSQL queue → queue worker → Twilio Calls API
+          │                                      │             │
+          └──── in-memory development path ──────┘             │
+                                                               ↓
+                                                    answer/status callbacks
+                                                               ↓
+                              Twilio Media Stream ↔ /voice/media ↔ OpenAI Realtime
+                                                               ↓
+                                                    sessions and transcripts
 ```
 
 Twilio callback validation depends on the exact externally visible `Twilio:PublicBaseUrl`. In production, use HTTPS/WSS URLs and never expose provider secrets in browser code.
+
+## Observability
+
+OpenTelemetry instruments ASP.NET Core requests, outbound HTTP calls, the durable queue worker, and the Realtime bridge. Incoming requests accept or generate an `X-Correlation-ID`, which is returned in the response and attached to logs and activities.
+
+Set `OTEL_EXPORTER_OTLP_ENDPOINT` to export traces and metrics to an OTLP-compatible backend such as Better Stack, Grafana, or an OpenTelemetry Collector. Queue metrics include `nexusops.voice.queue.completed`, `nexusops.voice.queue.retried`, and `nexusops.voice.queue.dead_lettered`; custom spans include `voice.queue.process` and `voice.realtime.bridge`.
 
 ## Testing
 
@@ -207,7 +222,20 @@ Twilio callback validation depends on the exact externally visible `Twilio:Publi
 dotnet test NexusOps.VoiceWorker.sln --configuration Release
 ```
 
-The current xUnit suite covers the in-memory operations, inventory, and customer-order stores. GitHub Actions restores dependencies, builds the solution, runs the tests, and verifies that the Docker image builds on pushes and pull requests targeting `main`.
+The xUnit suite covers portal stores, voice-call lifecycle safeguards, authorization behavior, and provider callbacks. PostgreSQL integration tests use Testcontainers to verify migrations, tenant isolation, concurrent `SKIP LOCKED` claims, retries, and dead-letter transitions:
+
+```powershell
+$env:RUN_POSTGRES_INTEGRATION_TESTS = "1"
+dotnet test NexusOps.VoiceWorker.sln --configuration Release
+```
+
+Docker must be available for the integration suite. GitHub Actions runs these tests, builds the Docker image, and performs security analysis for pushes and pull requests targeting `main`.
+
+### Dependabot auto-merge
+
+Dependabot checks NuGet, GitHub Actions, and Docker dependencies weekly. Patch and minor updates are automatically marked for squash merge, but GitHub merges them only after the protected `main` ruleset reports successful `Build and verify` and `analyze` checks. Major updates remain open for manual review, and any failed required check blocks the merge.
+
+The automation uses `pull_request_target` only to read trusted Dependabot metadata and enable GitHub auto-merge. It does not check out or execute code from the dependency-update branch.
 
 ## Docker and Railway
 
@@ -236,3 +264,7 @@ Tags matching the application version, such as `v0.2.0-beta.1`, trigger the rele
 - Voice-call management requires an authenticated Manager or Administrator and verifies that the call belongs to the configured tenant.
 - Rate limits protect login, voice, browser Realtime, and general request traffic; Twilio media streams also have concurrency and duration limits.
 - See [SECURITY.md](SECURITY.md) for the deployment requirements and private vulnerability-reporting process.
+
+## License
+
+NexusOps is available under the [MIT License](LICENSE).
