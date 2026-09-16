@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="680" viewBox="0 0 1400 680" role="img" aria-labelledby="title desc">
+  <title id="title">NexusOps operativna platforma</title>
+  <desc id="desc">Stilizirani prikaz NexusOps nadzorne ploče, radnih naloga, imovine i AI glasovnog centra.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#06101e"/><stop offset=".55" stop-color="#0e213c"/><stop offset="1" stop-color="#142a4d"/></linearGradient>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#38bdf8"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient>
+    <linearGradient id="area" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#38bdf8" stop-opacity=".35"/><stop offset="1" stop-color="#38bdf8" stop-opacity="0"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#000" flood-opacity=".35"/></filter>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <style>
+      .h1{fill:#f8fafc;font:800 42px system-ui,sans-serif}.h2{fill:#f8fafc;font:700 17px system-ui,sans-serif}.body{fill:#9fb2ca;font:14px system-ui,sans-serif}.tiny{fill:#6f86a4;font:12px system-ui,sans-serif}.nav{fill:#b8c8dc;font:600 13px system-ui,sans-serif}.card{fill:#0e1d32;stroke:#294563}.float{animation:float 4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}.f2{animation-delay:1.3s}.f3{animation-delay:2.6s}.wave{stroke-dasharray:8 10;animation:wave 2s linear infinite}.blink{animation:blink 1.6s ease-in-out infinite}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}@keyframes wave{to{stroke-dashoffset:-36}}@keyframes blink{0%,100%{opacity:.4}50%{opacity:1}}@media(prefers-reduced-motion:reduce){.float,.wave,.blink{animation:none}}
+    </style>
+  </defs>
+  <rect width="1400" height="680" rx="32" fill="url(#bg)"/>
+  <circle cx="1260" cy="100" r="260" fill="#8b5cf6" opacity=".08"/><circle cx="70" cy="650" r="260" fill="#38bdf8" opacity=".07"/>
+  <g transform="translate(70 54)"><rect width="44" height="44" rx="13" fill="url(#brand)"/><path d="M13 29V15h7l11 14h-7L13 15m18 0v14" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><text class="h2" x="58" y="29">NEXUSOPS</text></g>
+  <g transform="translate(690 74)"><text class="nav">OPERACIJE</text><text class="nav" x="118">IMOVINA</text><text class="nav" x="220">IZVJEŠTAJI</text><rect x="340" y="-23" width="150" height="38" rx="19" fill="#152c4b" stroke="#315277"/><circle class="blink" cx="365" cy="-4" r="5" fill="#34d399"/><text class="nav" x="380" y="1">SUSTAV AKTIVAN</text></g>
+  <text class="h1" x="72" y="166">Operacije pod kontrolom.</text><text x="72" y="206" fill="#67e8f9" font-family="system-ui,sans-serif" font-size="21" font-weight="650">Radni nalozi, imovina i AI glasovni tok u jednoj platformi.</text>
+  <g class="float" filter="url(#shadow)">
+    <rect class="card" x="70" y="255" width="300" height="150" rx="22"/><text class="tiny" x="98" y="288">AKTIVNI RADNI NALOZI</text><text x="98" y="344" fill="#fff" font-family="system-ui,sans-serif" font-size="48" font-weight="750">24</text><rect x="250" y="305" width="88" height="32" rx="16" fill="#123c3a"/><text x="270" y="326" fill="#6ee7b7" font-family="system-ui,sans-serif" font-size="13" font-weight="700">+ 12%</text><path d="M98 378C135 360 154 383 189 359S245 370 274 342 316 355 338 328" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/><path d="M98 378C135 360 154 383 189 359S245 370 274 342 316 355 338 328V390H98Z" fill="url(#area)"/>
+  </g>
+  <g class="float f2" filter="url(#shadow)">
+    <rect class="card" x="397" y="255" width="300" height="150" rx="22"/><text class="tiny" x="425" y="288">STATUS IMOVINE</text><circle cx="477" cy="347" r="39" fill="none" stroke="#213750" stroke-width="13"/><circle cx="477" cy="347" r="39" fill="none" stroke="#34d399" stroke-width="13" stroke-dasharray="205 245" stroke-linecap="round" transform="rotate(-90 477 347)"/><text class="h2" x="457" y="354">84%</text><text class="body" x="545" y="330">Operativno</text><text class="h2" x="545" y="359">126 / 150</text><text class="tiny" x="545" y="382">12 zahtijeva pregled</text>
+  </g>
+  <g class="float f3" filter="url(#shadow)">
+    <rect class="card" x="724" y="255" width="606" height="150" rx="22"/><text class="tiny" x="752" y="288">VOICE COMMAND CENTER</text><circle class="blink" cx="1288" cy="283" r="6" fill="#34d399" filter="url(#glow)"/><path class="wave" d="M756 350h28l13-35 19 72 20-53 17 30 20-58 22 81 18-53 17 16h29l15-32 20 66 18-48 18 27 22-72 19 93 20-51 14 17h27" fill="none" stroke="url(#brand)" stroke-width="4" stroke-linecap="round"/><text class="body" x="752" y="386">Twilio Media Stream</text><text class="body" x="1110" y="386">OpenAI Realtime</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect class="card" x="70" y="440" width="1260" height="165" rx="22"/><text class="h2" x="98" y="477">Prioritetni radni nalozi</text><text class="tiny" x="1105" y="477">AŽURIRANO UPRAVO SADA</text>
+    <line x1="98" y1="498" x2="1302" y2="498" stroke="#263f5d"/><text class="tiny" x="98" y="530">NALOG</text><text class="tiny" x="390" y="530">LOKACIJA</text><text class="tiny" x="665" y="530">STATUS</text><text class="tiny" x="930" y="530">TEHNIČAR</text>
+    <text class="body" x="98" y="566">WO-2048 · Preventivni servis</text><text class="body" x="390" y="566">Pogon Zagreb</text><rect x="665" y="544" width="98" height="30" rx="15" fill="#3b3018"/><text x="687" y="564" fill="#fbbf24" font-family="system-ui,sans-serif" font-size="12" font-weight="700">U TIJEKU</text><text class="body" x="930" y="566">Terenski tim A</text><circle cx="1278" cy="559" r="5" fill="#38bdf8"/>
+  </g>
+  <text x="700" y="651" text-anchor="middle" fill="#7188a6" font-family="system-ui,sans-serif" font-size="13">.NET 10 · PostgreSQL · Supabase Auth · Twilio · OpenAI Realtime · OpenTelemetry</text>
+</svg>
