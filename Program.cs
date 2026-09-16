@@ -205,6 +205,26 @@ app.Use(async (context, next) =>
 app.UseWebSockets();
 app.UseRateLimiter();
 app.UseAuthentication();
+var useLocalDevelopmentIdentity = string.Equals(requestedEnvironment, Environments.Development, StringComparison.OrdinalIgnoreCase) &&
+                                  !app.Configuration.GetValue<bool>("SupabaseAuth:Enabled");
+if (useLocalDevelopmentIdentity)
+{
+    app.Use(async (context, next) =>
+    {
+        if (context.User.Identity?.IsAuthenticated != true)
+        {
+            var claims = new[]
+            {
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, Guid.Empty.ToString()),
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, "Local Developer"),
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, "Administrator")
+            };
+            context.User = new System.Security.Claims.ClaimsPrincipal(
+                new System.Security.Claims.ClaimsIdentity(claims, "LocalDevelopment"));
+        }
+        await next();
+    });
+}
 app.UseAuthorization();
 app.Use(async (context, next) =>
 {
@@ -213,9 +233,8 @@ app.Use(async (context, next) =>
     var isRealtimeTest = context.Request.Path == "/realtime-test.html";
     if (isCommandCenter && !context.User.IsInRole("Administrator"))
     {
-        context.Response.StatusCode = context.User.Identity?.IsAuthenticated == true
-            ? StatusCodes.Status403Forbidden
-            : StatusCodes.Status401Unauthorized;
+        var reason = context.User.Identity?.IsAuthenticated == true ? "role" : "signin";
+        context.Response.Redirect($"/Voice/Access?reason={reason}");
         return;
     }
     if (isRealtimeTest && !context.User.IsInRole("Administrator") && !context.User.IsInRole("Manager"))
@@ -234,12 +253,14 @@ if (supabaseAuth.Enabled && supabaseAuth.RequireAuthenticatedUsers)
     app.Use(async (context, next) =>
     {
         var isAccountRoute = context.Request.Path.StartsWithSegments("/Account");
+        var isVoiceAccessRoute = context.Request.Path.StartsWithSegments("/Voice/Access");
         var isRazorPageRequest = !Path.HasExtension(context.Request.Path) &&
                                  !context.Request.Path.StartsWithSegments("/voice") &&
                                  !context.Request.Path.StartsWithSegments("/health") &&
                                  !context.Request.Path.StartsWithSegments("/status") &&
                                  !context.Request.Path.StartsWithSegments("/command-center");
-        if (isRazorPageRequest && !isAccountRoute && context.User.Identity?.IsAuthenticated != true)
+        if (isRazorPageRequest && !isAccountRoute && !isVoiceAccessRoute &&
+            context.User.Identity?.IsAuthenticated != true)
         {
             var returnUrl = Uri.EscapeDataString($"{context.Request.PathBase}{context.Request.Path}{context.Request.QueryString}");
             context.Response.Redirect($"/Account/Login?ReturnUrl={returnUrl}");
@@ -248,7 +269,7 @@ if (supabaseAuth.Enabled && supabaseAuth.RequireAuthenticatedUsers)
 
         var isDemoUser = context.User.IsInRole(NexusOpsRole.Demo.ToString());
         var isDemoRoute = context.Request.Path.StartsWithSegments("/Demo");
-        if (isDemoUser && !isAccountRoute && !isDemoRoute)
+        if (isDemoUser && !isAccountRoute && !isDemoRoute && !isVoiceAccessRoute)
         {
             context.Response.Redirect("/Demo");
             return;

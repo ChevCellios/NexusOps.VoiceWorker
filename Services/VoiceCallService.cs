@@ -24,16 +24,47 @@ public sealed class VoiceCallService(IVoiceCallRepository repository, IVoiceProv
         if (session.Status != VoiceCallStatus.Queued)
             throw new InvalidOperationException($"A call cannot be started from status {session.Status}.");
 
-        var providerCallId = await provider.StartCallAsync(session, cancellationToken);
-        session = session with
+        var queuedSession = session;
+        session = queuedSession with
         {
             Status = VoiceCallStatus.Initiating,
             Provider = provider.Name,
-            ProviderCallId = providerCallId,
             StartedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
         };
-        await repository.UpsertAsync(session, cancellationToken);
+        if (!await repository.TryUpdateAsync(
+                session, queuedSession.Status, queuedSession.ProviderCallId, cancellationToken))
+            throw new InvalidOperationException("The voice call session was already started by another request.");
+
+        string? providerCallId;
+        try
+        {
+            providerCallId = await provider.StartCallAsync(session, cancellationToken);
+        }
+        catch
+        {
+            var failedSession = session with
+            {
+                Status = VoiceCallStatus.Failed,
+                FailureReason = "The voice provider could not start the call.",
+                EndedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await repository.TryUpdateAsync(
+                failedSession, session.Status, session.ProviderCallId, CancellationToken.None);
+            throw;
+        }
+
+        var startedSession = session with
+        {
+            ProviderCallId = providerCallId,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+        if (!await repository.TryUpdateAsync(
+                startedSession, session.Status, session.ProviderCallId, cancellationToken))
+            throw new InvalidOperationException("The voice call session changed while the provider call was starting.");
+
+        session = startedSession;
         return new(session.Id, ToApiStatus(session.Status), provider.Name, providerCallId);
     }
 
@@ -69,24 +100,71 @@ public sealed class VoiceCallService(IVoiceCallRepository repository, IVoiceProv
         return session;
     }
 
-    public Task<VoiceCallSession?> ApplyProviderStatusAsync(
-        ProviderStatusRequest request, CancellationToken cancellationToken) =>
-        request.VoiceCallSessionId is null
-            ? Task.FromResult<VoiceCallSession?>(null)
-            : SetStatusAsync(request.VoiceCallSessionId.Value, MapProviderStatus(request.Status), null, cancellationToken);
-
-    private static VoiceCallStatus MapProviderStatus(string status) => status.ToLowerInvariant() switch
+    public async Task<VoiceCallSession?> ApplyProviderStatusAsync(
+        ProviderStatusRequest request, CancellationToken cancellationToken)
     {
-        "queued" => VoiceCallStatus.Queued,
-        "initiated" => VoiceCallStatus.Initiating,
-        "ringing" => VoiceCallStatus.Ringing,
-        "in-progress" => VoiceCallStatus.InProgress,
-        "completed" => VoiceCallStatus.Completed,
-        "busy" => VoiceCallStatus.Busy,
-        "no-answer" => VoiceCallStatus.NoAnswer,
-        "canceled" => VoiceCallStatus.Cancelled,
-        _ => VoiceCallStatus.Failed
+        if (request.VoiceCallSessionId is null) return null;
+        var session = await repository.GetAsync(request.VoiceCallSessionId.Value, cancellationToken);
+        if (session is null || string.IsNullOrWhiteSpace(session.ProviderCallId) ||
+            !string.Equals(session.ProviderCallId, request.ProviderCallId, StringComparison.Ordinal))
+            return null;
+
+        if (!TryMapProviderStatus(request.Status, out var nextStatus)) return session;
+        if (nextStatus == session.Status || !CanApplyProviderStatus(session.Status, nextStatus)) return session;
+
+        var updated = session with
+        {
+            Status = nextStatus,
+            AnsweredAt = nextStatus is VoiceCallStatus.Answered or VoiceCallStatus.InProgress
+                ? session.AnsweredAt ?? DateTimeOffset.UtcNow
+                : session.AnsweredAt,
+            EndedAt = IsTerminal(nextStatus) ? session.EndedAt ?? DateTimeOffset.UtcNow : session.EndedAt,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+        return await repository.TryUpdateAsync(
+            updated, session.Status, session.ProviderCallId, cancellationToken)
+            ? updated
+            : await repository.GetAsync(session.Id, cancellationToken);
+    }
+
+    private static bool TryMapProviderStatus(string status, out VoiceCallStatus mappedStatus)
+    {
+        mappedStatus = status.ToLowerInvariant() switch
+        {
+            "queued" => VoiceCallStatus.Queued,
+            "initiated" => VoiceCallStatus.Initiating,
+            "ringing" => VoiceCallStatus.Ringing,
+            "in-progress" => VoiceCallStatus.InProgress,
+            "completed" => VoiceCallStatus.Completed,
+            "failed" => VoiceCallStatus.Failed,
+            "busy" => VoiceCallStatus.Busy,
+            "no-answer" => VoiceCallStatus.NoAnswer,
+            "canceled" => VoiceCallStatus.Cancelled,
+            _ => default
+        };
+        return status.Equals("queued", StringComparison.OrdinalIgnoreCase) ||
+               status.Equals("initiated", StringComparison.OrdinalIgnoreCase) ||
+               status.Equals("ringing", StringComparison.OrdinalIgnoreCase) ||
+               status.Equals("in-progress", StringComparison.OrdinalIgnoreCase) ||
+               status.Equals("completed", StringComparison.OrdinalIgnoreCase) ||
+               status.Equals("failed", StringComparison.OrdinalIgnoreCase) ||
+               status.Equals("busy", StringComparison.OrdinalIgnoreCase) ||
+               status.Equals("no-answer", StringComparison.OrdinalIgnoreCase) ||
+               status.Equals("canceled", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool CanApplyProviderStatus(VoiceCallStatus current, VoiceCallStatus next) => current switch
+    {
+        VoiceCallStatus.Initiating => next is VoiceCallStatus.Ringing or VoiceCallStatus.Answered or
+            VoiceCallStatus.InProgress || IsTerminal(next),
+        VoiceCallStatus.Ringing => next is VoiceCallStatus.Answered or VoiceCallStatus.InProgress || IsTerminal(next),
+        VoiceCallStatus.Answered => next == VoiceCallStatus.InProgress || IsTerminal(next),
+        VoiceCallStatus.InProgress => IsTerminal(next),
+        _ => false
     };
+
+    private static bool IsTerminal(VoiceCallStatus status) => status is VoiceCallStatus.Completed or
+        VoiceCallStatus.Failed or VoiceCallStatus.Busy or VoiceCallStatus.NoAnswer or VoiceCallStatus.Cancelled;
 
     private static string ToApiStatus(VoiceCallStatus status) => status switch
     {

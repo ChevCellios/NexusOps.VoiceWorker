@@ -116,6 +116,7 @@ Open the local URL printed by ASP.NET Core. Useful routes include:
 | `/voice/media` | Twilio WebSocket endpoint; not a browser page |
 
 The Development profile uses in-memory persistence unless a database connection is supplied. Data resets when the process stops.
+When Supabase authentication is disabled, the Development profile uses a local-only Administrator identity so the Command Center and protected voice APIs can be exercised locally. This identity is never enabled outside Development.
 
 ## Configuration
 

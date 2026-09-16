@@ -71,7 +71,7 @@
                 {
                     <a asp-page="/Users/Index">◉ Korisnici</a>
                 }
-                <a href="/command-center">☎ Voice Command Center</a>
+                <a href="@(User.IsInRole("Administrator") ? "/command-center" : "/Voice/Access")">☎ Voice Command Center</a>
                 }
             </nav>
             <div class="side-foot">NexusOps v0.1<br /><span>Razvojno okruženje</span></div>

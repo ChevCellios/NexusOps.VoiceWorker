@@ -9,11 +9,17 @@ public interface IVoiceCallRepository
     Task<VoiceCallSession?> GetAsync(Guid id, CancellationToken cancellationToken);
     Task<IReadOnlyList<VoiceCallSession>> ListAsync(int limit, CancellationToken cancellationToken);
     Task UpsertAsync(VoiceCallSession session, CancellationToken cancellationToken);
+    Task<bool> TryUpdateAsync(
+        VoiceCallSession session,
+        VoiceCallStatus expectedStatus,
+        string? expectedProviderCallId,
+        CancellationToken cancellationToken);
 }
 
 public sealed class InMemoryVoiceCallRepository : IVoiceCallRepository
 {
     private readonly ConcurrentDictionary<Guid, VoiceCallSession> _sessions = new();
+    private readonly Lock _lock = new();
 
     public Task<VoiceCallSession?> GetAsync(Guid id, CancellationToken cancellationToken)
     {
@@ -29,6 +35,24 @@ public sealed class InMemoryVoiceCallRepository : IVoiceCallRepository
     {
         _sessions[session.Id] = session;
         return Task.CompletedTask;
+    }
+
+    public Task<bool> TryUpdateAsync(
+        VoiceCallSession session,
+        VoiceCallStatus expectedStatus,
+        string? expectedProviderCallId,
+        CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            if (!_sessions.TryGetValue(session.Id, out var current) ||
+                current.Status != expectedStatus ||
+                !string.Equals(current.ProviderCallId, expectedProviderCallId, StringComparison.Ordinal))
+                return Task.FromResult(false);
+
+            _sessions[session.Id] = session;
+            return Task.FromResult(true);
+        }
     }
 }
 
@@ -108,6 +132,50 @@ public sealed class PostgresVoiceCallRepository(NpgsqlDataSource dataSource) : I
         command.Parameters.AddWithValue((object?)session.DurationSeconds ?? DBNull.Value);
         var affected = await command.ExecuteNonQueryAsync(cancellationToken);
         if (affected != 1) throw new InvalidOperationException($"Voice call session {session.Id} was not found.");
+    }
+
+    public async Task<bool> TryUpdateAsync(
+        VoiceCallSession session,
+        VoiceCallStatus expectedStatus,
+        string? expectedProviderCallId,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            update voice_call_sessions
+            set status = $2,
+                provider = $3,
+                provider_call_id = $4,
+                result_code = $5,
+                result_summary = $6,
+                started_at = $7,
+                answered_at = $8,
+                ended_at = $9,
+                duration_seconds = $10,
+                updated_at = now()
+            where id = $1
+              and status = $11
+              and provider_call_id is not distinct from $12
+            """;
+
+        await using var command = dataSource.CreateCommand(sql);
+        AddUpdateParameters(command, session);
+        command.Parameters.AddWithValue(ToDatabaseStatus(expectedStatus));
+        command.Parameters.AddWithValue((object?)expectedProviderCallId ?? DBNull.Value);
+        return await command.ExecuteNonQueryAsync(cancellationToken) == 1;
+    }
+
+    private static void AddUpdateParameters(NpgsqlCommand command, VoiceCallSession session)
+    {
+        command.Parameters.AddWithValue(session.Id);
+        command.Parameters.AddWithValue(ToDatabaseStatus(session.Status));
+        command.Parameters.AddWithValue(session.Provider);
+        command.Parameters.AddWithValue((object?)session.ProviderCallId ?? DBNull.Value);
+        command.Parameters.AddWithValue((object?)session.Outcome ?? DBNull.Value);
+        command.Parameters.AddWithValue((object?)session.FailureReason ?? DBNull.Value);
+        command.Parameters.AddWithValue((object?)session.StartedAt ?? DBNull.Value);
+        command.Parameters.AddWithValue((object?)session.AnsweredAt ?? DBNull.Value);
+        command.Parameters.AddWithValue((object?)session.EndedAt ?? DBNull.Value);
+        command.Parameters.AddWithValue((object?)session.DurationSeconds ?? DBNull.Value);
     }
 
     private static Guid? GetNullableGuid(NpgsqlDataReader reader, int ordinal) =>

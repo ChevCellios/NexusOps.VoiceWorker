@@ -1,0 +1,44 @@
+@page
+@{
+    ViewData["Title"] = "Voice Command Center pristup";
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+}
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">Zaštićeni Voice alati</span>
+        <h1>Voice Command Center zahtijeva administratorski pristup</h1>
+        <p>
+            @if (isAuthenticated)
+            {
+                <text>Tvoj je račun prijavljen, ali nema administratorsku ovlast za upravljanje stvarnim pozivima.</text>
+            }
+            else
+            {
+                <text>Za upravljanje stvarnim pozivima prijavi se administratorskim računom ili isprobaj sigurnu demo simulaciju.</text>
+            }
+        </p>
+    </div>
+</div>
+
+<section class="panel form-panel" style="max-width:820px">
+    <div class="panel-head">
+        <h2>Odaberi način pristupa</h2>
+        <span>Bez izlaganja poslovnih podataka</span>
+    </div>
+    <div class="form-grid" style="margin-top:20px">
+        <article>
+            <span class="eyebrow">Javni demo</span>
+            <h3>Isprobaj demo način</h3>
+            <p>Pokreni simulirani Voice poziv bez Twilija, troška ili pristupa stvarnim podacima.</p>
+            <a class="btn btn-primary" asp-page="/Account/Login" asp-route-ReturnUrl="/Demo">Prijavi se u postojeći demo</a>
+        </article>
+        <article>
+            <span class="eyebrow">Administratori</span>
+            <h3>Pristupi Command Centeru</h3>
+            <p>Upotrijebi administratorske pristupne podatke koje ti je dodijelio vlasnik NexusOps okruženja.</p>
+            <a class="btn secondary-btn" asp-page="/Account/Login" asp-route-ReturnUrl="/command-center">Administratorska prijava</a>
+        </article>
+    </div>
+    <p class="form-hint" style="margin-top:24px">Ako nemaš administratorski račun, zatraži pristup od administratora svoje organizacije.</p>
+</section>
