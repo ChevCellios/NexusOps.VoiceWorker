@@ -10,6 +10,7 @@ All notable changes are documented here. This project follows Semantic Versionin
 - OpenTelemetry traces and metrics with request correlation IDs and optional OTLP export.
 - Docker-backed PostgreSQL integration tests for queue migration, concurrency, tenant isolation, and retry state.
 - MIT license for reuse and distribution.
+- Dependabot auto-merge automation for patch and minor updates after required CI checks pass.
 
 ### Changed
 

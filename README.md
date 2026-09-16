@@ -231,6 +231,12 @@ dotnet test NexusOps.VoiceWorker.sln --configuration Release
 
 Docker must be available for the integration suite. GitHub Actions runs these tests, builds the Docker image, and performs security analysis for pushes and pull requests targeting `main`.
 
+### Dependabot auto-merge
+
+Dependabot checks NuGet, GitHub Actions, and Docker dependencies weekly. Patch and minor updates are automatically marked for squash merge, but GitHub merges them only after the protected `main` ruleset reports successful `Build and verify` and `analyze` checks. Major updates remain open for manual review, and any failed required check blocks the merge.
+
+The automation uses `pull_request_target` only to read trusted Dependabot metadata and enable GitHub auto-merge. It does not check out or execute code from the dependency-update branch.
+
 ## Docker and Railway
 
 Build and run the included multi-stage image:
