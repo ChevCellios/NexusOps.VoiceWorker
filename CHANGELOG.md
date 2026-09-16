@@ -4,6 +4,17 @@ All notable changes are documented here. This project follows Semantic Versionin
 
 ## [Unreleased]
 
+### Added
+
+- Durable PostgreSQL voice-call queue with leased `SKIP LOCKED` claims, safe throttling retries, and dead-letter state.
+- OpenTelemetry traces and metrics with request correlation IDs and optional OTLP export.
+- Docker-backed PostgreSQL integration tests for queue migration, concurrency, tenant isolation, and retry state.
+
+### Changed
+
+- Upgraded the runtime, build images, CI, and test targets from .NET 9 to .NET 10 LTS.
+- Added timeout and circuit-breaker protection to OpenAI and Supabase HTTP clients without retrying unsafe POST requests.
+
 ### Fixed
 
 - Replaced obsolete Command Center and browser Realtime access-key prompts with role-protected cookie authentication.

@@ -1,6 +1,7 @@
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using NexusOps.VoiceWorker.Diagnostics;
 using Microsoft.Extensions.Options;
 using NexusOps.VoiceWorker.Persistence;
 
@@ -27,6 +28,9 @@ public sealed class OpenAIRealtimeClient(
 
     public async Task BridgeAsync(WebSocket providerSocket, Guid? voiceCallSessionId, CancellationToken cancellationToken)
     {
+        using var activity = NexusOpsTelemetry.ActivitySource.StartActivity("voice.realtime.bridge");
+        activity?.SetTag("voice.session_id", voiceCallSessionId);
+        activity?.SetTag("openai.realtime.model", _options.RealtimeModel);
         Guid? resolvedSessionId = voiceCallSessionId;
         EnsureConfigured();
         using var openAiSocket = new ClientWebSocket();

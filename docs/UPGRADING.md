@@ -6,6 +6,8 @@ NexusOps uses Semantic Versioning. Beta releases use tags such as `v0.2.0-beta.1
 
 ## Upgrade from an existing installation
 
+This version requires the .NET 10 SDK/runtime and applies `005_voice_call_queue.sql`. PostgreSQL deployments should back up the database before the first start and verify that the application database role can create and update `voice_call_queue`.
+
 1. Back up PostgreSQL or create a Supabase point-in-time recovery point.
 2. Deploy the candidate tag to a staging service with its own database.
 3. Verify `GET /health`, sign-in, work orders, inventory, and a mock voice call.

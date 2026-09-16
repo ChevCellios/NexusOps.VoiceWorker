@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
@@ -14,10 +14,18 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Testcontainers.PostgreSql" Version="4.15.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\NexusOps.VoiceWorker.csproj" />
     <ProjectReference Include="..\NexusOps.Web\NexusOps.Web.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\Database\Migrations\005_voice_call_queue.sql"
+          Link="Database\Migrations\005_voice_call_queue.sql"
+          CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

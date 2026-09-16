@@ -14,6 +14,10 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Http.Resilience;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using System.Threading.RateLimiting;
 using NexusOps.Web.Security;
 
@@ -34,7 +38,7 @@ if (!string.IsNullOrWhiteSpace(railwayPort))
 LoadLocalConnectionString(builder.Configuration, builder.Environment.ContentRootPath);
 LoadLocalProviderSecrets(builder.Configuration, builder.Environment.ContentRootPath);
 if (string.Equals(requestedEnvironment, Environments.Development, StringComparison.OrdinalIgnoreCase))
-    builder.Configuration.AddUserSecrets<Program>(optional: true);
+    builder.Configuration.AddUserSecrets<VoiceCallService>(optional: true);
 
 builder.Services.AddControllers();
 builder.Services.AddRazorPages()
@@ -45,7 +49,13 @@ builder.Services.AddHealthChecks()
 builder.Services.AddOptions<TwilioOptions>().BindConfiguration(TwilioOptions.SectionName);
 builder.Services.AddOptions<OpenAIRealtimeOptions>().BindConfiguration(OpenAIRealtimeOptions.SectionName);
 builder.Services.AddHttpClient<TwilioVoiceProvider>();
-builder.Services.AddHttpClient<BrowserRealtimeSessionService>();
+builder.Services.AddHttpClient<BrowserRealtimeSessionService>()
+    .AddStandardResilienceHandler(options =>
+    {
+        options.Retry.DisableForUnsafeHttpMethods();
+        options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(15);
+        options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(30);
+    });
 builder.Services.AddOptions<SupabaseAuthOptions>().BindConfiguration(SupabaseAuthOptions.SectionName);
 builder.Services.AddOptions<VoiceMediaSecurityOptions>().BindConfiguration(VoiceMediaSecurityOptions.SectionName);
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -53,7 +63,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
     options.ForwardLimit = 1;
     // Railway terminates TLS at a dynamic edge proxy. Only deploy the container behind that trusted edge.
-    options.KnownNetworks.Clear();
+    options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -127,7 +137,33 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
 });
-builder.Services.AddHttpClient<SupabaseSignInService>();
+builder.Services.AddHttpClient<SupabaseSignInService>()
+    .AddStandardResilienceHandler(options =>
+    {
+        options.Retry.DisableForUnsafeHttpMethods();
+        options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(10);
+        options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(20);
+    });
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService(NexusOpsTelemetry.ServiceName))
+    .WithTracing(tracing =>
+    {
+        tracing.AddSource(NexusOpsTelemetry.ServiceName)
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddNpgsql();
+        if (!string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]))
+            tracing.AddOtlpExporter();
+    })
+    .WithMetrics(metrics =>
+    {
+        metrics.AddMeter(NexusOpsTelemetry.ServiceName)
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation();
+        if (!string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]))
+            metrics.AddOtlpExporter();
+    });
+builder.Services.AddOptions<VoiceCallQueueOptions>().BindConfiguration(VoiceCallQueueOptions.SectionName);
 var persistenceProvider = builder.Configuration["Persistence:Provider"];
 var connectionString = builder.Configuration.GetConnectionString("NexusOps");
 var tenantId = builder.Configuration["NexusOps:TenantId"];
@@ -137,6 +173,7 @@ if (useInMemoryPersistence)
 {
     builder.Services.AddSingleton<IVoiceCallRepository, InMemoryVoiceCallRepository>();
     builder.Services.AddSingleton<IVoiceTranscriptRepository, InMemoryVoiceTranscriptRepository>();
+    builder.Services.AddSingleton<IVoiceCallQueue, DisabledVoiceCallQueue>();
 }
 else
 {
@@ -144,6 +181,7 @@ else
     builder.Services.AddHostedService<DatabaseMigrationService>();
     builder.Services.AddSingleton<IVoiceCallRepository, PostgresVoiceCallRepository>();
     builder.Services.AddSingleton<IVoiceTranscriptRepository, PostgresVoiceTranscriptRepository>();
+    builder.Services.AddSingleton<IVoiceCallQueue, PostgresVoiceCallQueue>();
 }
 if (!string.IsNullOrWhiteSpace(connectionString) && Guid.TryParse(tenantId, out var parsedTenantId))
 {
@@ -192,6 +230,21 @@ ValidateProductionConfiguration(app.Configuration, app.Environment);
 app.UseExceptionHandler();
 if (!app.Environment.IsDevelopment()) app.UseHsts();
 app.UseForwardedHeaders();
+app.Use(async (context, next) =>
+{
+    const string headerName = "X-Correlation-ID";
+    var supplied = context.Request.Headers[headerName].ToString();
+    var correlationId = !string.IsNullOrWhiteSpace(supplied) && supplied.Length <= 128
+        ? supplied
+        : context.TraceIdentifier;
+    context.TraceIdentifier = correlationId;
+    context.Response.Headers[headerName] = correlationId;
+    System.Diagnostics.Activity.Current?.SetTag("correlation.id", correlationId);
+    using (context.RequestServices.GetRequiredService<ILoggerFactory>()
+               .CreateLogger("NexusOps.Correlation")
+               .BeginScope(new Dictionary<string, object> { ["CorrelationId"] = correlationId }))
+        await next();
+});
 app.UseHttpsRedirection();
 app.Use(async (context, next) =>
 {
@@ -205,6 +258,26 @@ app.Use(async (context, next) =>
 app.UseWebSockets();
 app.UseRateLimiter();
 app.UseAuthentication();
+var useLocalDevelopmentIdentity = string.Equals(requestedEnvironment, Environments.Development, StringComparison.OrdinalIgnoreCase) &&
+                                  !app.Configuration.GetValue<bool>("SupabaseAuth:Enabled");
+if (useLocalDevelopmentIdentity)
+{
+    app.Use(async (context, next) =>
+    {
+        if (context.User.Identity?.IsAuthenticated != true)
+        {
+            var claims = new[]
+            {
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, Guid.Empty.ToString()),
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, "Local Developer"),
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, "Administrator")
+            };
+            context.User = new System.Security.Claims.ClaimsPrincipal(
+                new System.Security.Claims.ClaimsIdentity(claims, "LocalDevelopment"));
+        }
+        await next();
+    });
+}
 app.UseAuthorization();
 app.Use(async (context, next) =>
 {
@@ -213,9 +286,8 @@ app.Use(async (context, next) =>
     var isRealtimeTest = context.Request.Path == "/realtime-test.html";
     if (isCommandCenter && !context.User.IsInRole("Administrator"))
     {
-        context.Response.StatusCode = context.User.Identity?.IsAuthenticated == true
-            ? StatusCodes.Status403Forbidden
-            : StatusCodes.Status401Unauthorized;
+        var reason = context.User.Identity?.IsAuthenticated == true ? "role" : "signin";
+        context.Response.Redirect($"/Voice/Access?reason={reason}");
         return;
     }
     if (isRealtimeTest && !context.User.IsInRole("Administrator") && !context.User.IsInRole("Manager"))
@@ -234,12 +306,14 @@ if (supabaseAuth.Enabled && supabaseAuth.RequireAuthenticatedUsers)
     app.Use(async (context, next) =>
     {
         var isAccountRoute = context.Request.Path.StartsWithSegments("/Account");
+        var isVoiceAccessRoute = context.Request.Path.StartsWithSegments("/Voice/Access");
         var isRazorPageRequest = !Path.HasExtension(context.Request.Path) &&
                                  !context.Request.Path.StartsWithSegments("/voice") &&
                                  !context.Request.Path.StartsWithSegments("/health") &&
                                  !context.Request.Path.StartsWithSegments("/status") &&
                                  !context.Request.Path.StartsWithSegments("/command-center");
-        if (isRazorPageRequest && !isAccountRoute && context.User.Identity?.IsAuthenticated != true)
+        if (isRazorPageRequest && !isAccountRoute && !isVoiceAccessRoute &&
+            context.User.Identity?.IsAuthenticated != true)
         {
             var returnUrl = Uri.EscapeDataString($"{context.Request.PathBase}{context.Request.Path}{context.Request.QueryString}");
             context.Response.Redirect($"/Account/Login?ReturnUrl={returnUrl}");
@@ -248,7 +322,7 @@ if (supabaseAuth.Enabled && supabaseAuth.RequireAuthenticatedUsers)
 
         var isDemoUser = context.User.IsInRole(NexusOpsRole.Demo.ToString());
         var isDemoRoute = context.Request.Path.StartsWithSegments("/Demo");
-        if (isDemoUser && !isAccountRoute && !isDemoRoute)
+        if (isDemoUser && !isAccountRoute && !isDemoRoute && !isVoiceAccessRoute)
         {
             context.Response.Redirect("/Demo");
             return;
