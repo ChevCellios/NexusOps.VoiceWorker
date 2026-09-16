@@ -16,6 +16,7 @@ All notable changes are documented here. This project follows Semantic Versionin
 
 - Upgraded the runtime, build images, CI, and test targets from .NET 9 to .NET 10 LTS.
 - Added timeout and circuit-breaker protection to OpenAI and Supabase HTTP clients without retrying unsafe POST requests.
+- Redesigned the README with a Croatian project overview, production/demo guidance, a dashboard screenshot, and animated NexusOps visuals.
 
 ### Fixed
 
